@@ -1,0 +1,13 @@
+# Nanopb options file for battery_history.proto
+# This defines max sizes for arrays and strings
+
+# Device metadata strings
+zmk.battery_history.DeviceMetadata.device_name               max_size:32
+
+# Error message max size
+zmk.battery_history.ErrorResponse.message                    max_size:64
+
+# Maximum number of battery history entries
+# Stores ~7 days at 1 hour intervals = 168 entries
+# We use 192 entries for flexibility (~8 days)
+zmk.battery_history.GetBatteryHistoryResponse.entries        max_count:192

@@ -1,11 +1,12 @@
-/* ZMK Module Template Styles */
+/* ZMK Battery History Module Styles */
 
 .app {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 2rem;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     sans-serif;
+  min-height: 100vh;
 }
 
 .app-header {
@@ -15,18 +16,20 @@
 
 .app-header h1 {
   margin-bottom: 0.5rem;
-  color: #333;
+  color: #1e293b;
+  font-size: 2rem;
 }
 
 .app-header p {
-  color: #666;
+  color: #64748b;
   margin: 0;
+  font-size: 1.125rem;
 }
 
 .card {
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -34,24 +37,116 @@
 .card h2 {
   margin-top: 0;
   margin-bottom: 1rem;
-  color: #333;
-  border-bottom: 2px solid #eee;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
   padding-bottom: 0.5rem;
 }
 
-.button-group {
+/* Connect Card */
+.connect-card {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.connect-content {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.connect-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.connect-card h2 {
+  border: none;
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+.connect-card > .connect-content > p {
+  color: #64748b;
+  margin-bottom: 1.5rem;
+}
+
+.connect-hint {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-top: 1.5rem;
+}
+
+/* Device Card */
+.device-card {
+  padding: 1rem 1.5rem;
+}
+
+.device-status {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.device-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.status-indicator.connected {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.5); }
+  50% { box-shadow: 0 0 16px rgba(34, 197, 94, 0.8); }
+}
+
+.device-name {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Loading indicator */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  color: #64748b;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #4a90d9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .btn {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn:disabled {
@@ -59,37 +154,57 @@
   cursor: not-allowed;
 }
 
+.btn-large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+.btn-small {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
 .btn-primary {
-  background: #4a90d9;
+  background: linear-gradient(135deg, #4a90d9 0%, #357abd 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(74, 144, 217, 0.3);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #357abd;
+  background: linear-gradient(135deg, #357abd 0%, #2563eb 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(74, 144, 217, 0.4);
 }
 
 .btn-secondary {
-  background: #6c757d;
-  color: white;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #5a6268;
+  background: #e2e8f0;
 }
 
 .device-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.device-info.card-section {
   margin-top: 1rem;
   padding: 1rem;
   background: #e8f5e9;
   border-radius: 6px;
 }
 
-.device-info h3 {
+.device-info.card-section h3 {
   margin: 0 0 0.5rem 0;
   color: #2e7d32;
 }
 
-.device-info p {
+.device-info.card-section p {
   margin: 0.25rem 0;
   color: #333;
 }
@@ -187,95 +302,135 @@
 
 .app-footer {
   text-align: center;
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
-  color: #666;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
 }
 
 .app-footer p {
-  margin: 0;
+  margin: 0.25rem 0;
+}
+
+.footer-hint {
+  font-size: 0.875rem;
+  color: #94a3b8;
 }
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .app {
-    background: #1a1a1a;
-    color: #fff;
+    background: #0f172a;
+    color: #f1f5f9;
   }
 
   .app-header h1 {
-    color: #fff;
+    color: #f1f5f9;
   }
 
   .app-header p {
-    color: #aaa;
+    color: #94a3b8;
   }
 
   .card {
-    background: #2d2d2d;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    background: #1e293b;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   }
 
   .card h2 {
-    color: #fff;
-    border-bottom-color: #444;
+    color: #f1f5f9;
+    border-bottom-color: #334155;
   }
 
-  .device-info {
+  .connect-card > .connect-content > p {
+    color: #94a3b8;
+  }
+
+  .connect-hint {
+    color: #64748b;
+  }
+
+  .device-name {
+    color: #f1f5f9;
+  }
+
+  .loading-indicator {
+    color: #94a3b8;
+  }
+
+  .loading-spinner {
+    border-color: #334155;
+    border-top-color: #60a5fa;
+  }
+
+  .device-info.card-section {
     background: #1b3320;
   }
 
-  .device-info p {
+  .device-info.card-section p {
     color: #ccc;
   }
 
   .error-message {
-    background: #3d1f1f;
-    color: #ff8a80;
+    background: #450a0a;
+    color: #fca5a5;
   }
 
   .warning-message {
-    background: #3d2f1f;
-    color: #ffb74d;
+    background: #422006;
+    color: #fcd34d;
   }
 
   .subsystem-item {
-    background: #333;
+    background: #334155;
   }
 
   .subsystem-item.active {
-    background: #1a3a5c;
-    border-color: #4a90d9;
+    background: #1e3a5f;
+    border-color: #60a5fa;
   }
 
   .subsystem-index {
-    color: #aaa;
+    color: #94a3b8;
   }
 
   .subsystem-id {
-    color: #fff;
+    color: #f1f5f9;
+  }
+
+  .btn-secondary {
+    background: #334155;
+    border-color: #475569;
+    color: #e2e8f0;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: #475569;
   }
 
   .input-group input {
-    background: #333;
-    border-color: #555;
-    color: #fff;
+    background: #334155;
+    border-color: #475569;
+    color: #f1f5f9;
   }
 
   .response-box {
-    background: #333;
-    border-color: #555;
+    background: #334155;
+    border-color: #475569;
   }
 
   .response-box pre {
-    background: #2d2d2d;
-    color: #fff;
+    background: #1e293b;
+    color: #f1f5f9;
   }
 
   .app-footer {
-    border-top-color: #444;
-    color: #aaa;
+    border-top-color: #334155;
+    color: #94a3b8;
+  }
+
+  .footer-hint {
+    color: #64748b;
   }
 }
 

@@ -1,0 +1,270 @@
+/* Battery History Section Styles */
+
+.battery-section {
+  background: #fff;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: #e8e8e8;
+  transform: scale(1.05);
+}
+
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon.btn-danger:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.spin {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Battery Status Section */
+.battery-status-section {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.device-metadata {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.metadata-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.metadata-item:last-child {
+  border-bottom: none;
+}
+
+.metadata-label {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.metadata-value {
+  font-weight: 600;
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Chart Section */
+.chart-section {
+  margin-bottom: 2rem;
+}
+
+.chart-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #475569;
+}
+
+/* Stats Section */
+.stats-section {
+  margin-bottom: 1.5rem;
+}
+
+.battery-stats h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #475569;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  transition: transform 0.2s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+}
+
+.stat-item.stat-highlight {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+}
+
+/* Last Updated */
+.last-updated {
+  text-align: right;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* Warning hint */
+.warning-hint {
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.warning-hint code {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .battery-section {
+    background: #1e1e1e;
+  }
+
+  .btn-icon {
+    background: #2d2d2d;
+    border-color: #404040;
+  }
+
+  .btn-icon:hover:not(:disabled) {
+    background: #383838;
+  }
+
+  .btn-icon.btn-danger:hover:not(:disabled) {
+    background: #450a0a;
+    border-color: #7f1d1d;
+  }
+
+  .device-metadata {
+    background: #2d2d2d;
+  }
+
+  .metadata-item {
+    border-color: #404040;
+  }
+
+  .metadata-label {
+    color: #94a3b8;
+  }
+
+  .metadata-value {
+    color: #e2e8f0;
+  }
+
+  .chart-section h3,
+  .battery-stats h3 {
+    color: #94a3b8;
+  }
+
+  .stat-item {
+    background: #2d2d2d;
+  }
+
+  .stat-item.stat-highlight {
+    background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%);
+  }
+
+  .stat-value {
+    color: #f1f5f9;
+  }
+
+  .stat-label {
+    color: #94a3b8;
+  }
+
+  .last-updated {
+    color: #64748b;
+  }
+
+  .warning-hint code {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .battery-status-section {
+    flex-direction: column;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

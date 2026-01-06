@@ -1,0 +1,166 @@
+/* Battery Indicator Styles */
+
+.battery-indicator {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.battery-indicator.loading {
+  opacity: 0.7;
+}
+
+/* Battery visual representation */
+.battery-visual {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.battery-body {
+  position: relative;
+  width: 80px;
+  height: 36px;
+  border: 3px solid currentColor;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.battery-fill {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  bottom: 3px;
+  background: currentColor;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+
+.battery-segments {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+}
+
+.battery-segments .segment {
+  flex: 1;
+  border-right: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.battery-segments .segment:last-child {
+  border-right: none;
+}
+
+.battery-tip {
+  width: 6px;
+  height: 18px;
+  background: currentColor;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Battery info */
+.battery-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.battery-percentage {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.percentage-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.percentage-symbol {
+  font-size: 1.25rem;
+  opacity: 0.7;
+}
+
+.battery-status {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+/* Loading animation */
+.loading-dots {
+  display: inline-block;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Status colors */
+.battery-indicator.status-good {
+  color: #16a34a;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.battery-indicator.status-medium {
+  color: #ca8a04;
+  background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%);
+}
+
+.battery-indicator.status-low {
+  color: #dc2626;
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .battery-indicator.status-good {
+    color: #4ade80;
+    background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+  }
+
+  .battery-indicator.status-medium {
+    color: #facc15;
+    background: linear-gradient(135deg, #422006 0%, #713f12 100%);
+  }
+
+  .battery-indicator.status-low {
+    color: #f87171;
+    background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+  }
+
+  .battery-segments .segment {
+    border-color: rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .battery-indicator {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .battery-body {
+    width: 100px;
+    height: 44px;
+  }
+
+  .battery-percentage {
+    font-size: 2.5rem;
+  }
+}

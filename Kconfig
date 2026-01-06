@@ -8,3 +8,49 @@ config ZMK_TEMPLATE_FEATURE_STUDIO_RPC
     depends on ZMK_STUDIO
 
 endif
+
+# Battery History Feature
+config ZMK_BATTERY_HISTORY
+    bool "Enable battery history tracking"
+    depends on ZMK_BATTERY_REPORTING
+    help
+      Track battery level over time and store history in persistent storage.
+      This allows users to view battery consumption patterns.
+
+if ZMK_BATTERY_HISTORY
+
+config ZMK_BATTERY_HISTORY_STUDIO_RPC
+    bool "Enable battery history custom Studio RPC"
+    depends on ZMK_STUDIO
+    help
+      Enable custom RPC protocol to retrieve battery history via ZMK Studio.
+
+config ZMK_BATTERY_HISTORY_MAX_ENTRIES
+    int "Maximum number of battery history entries to store"
+    default 192
+    range 24 192
+    help
+      Maximum number of battery history entries to keep in storage.
+      Default is 192 entries (~8 days at 1 hour intervals).
+      Lower values reduce flash wear and memory usage.
+
+config ZMK_BATTERY_HISTORY_INTERVAL_MINUTES
+    int "Battery history recording interval in minutes"
+    default 60
+    range 15 1440
+    help
+      How often to record a battery level entry in minutes.
+      Default is 60 minutes (1 hour) to balance accuracy and flash wear.
+      Minimum is 15 minutes, maximum is 1440 minutes (24 hours).
+
+config ZMK_BATTERY_HISTORY_SAVE_THRESHOLD
+    int "Number of new entries before saving to persistent storage"
+    default 4
+    range 1 24
+    help
+      How many new entries to accumulate before writing to persistent storage.
+      Higher values reduce flash write frequency but risk losing data on reset.
+      Default is 4 entries (at 1 hour interval, saves every 4 hours).
+      This helps extend flash storage life on devices like XIAO nrf52840.
+
+endif

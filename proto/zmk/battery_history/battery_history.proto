@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package zmk.battery_history;
+
+// Request to get battery history data
+message GetBatteryHistoryRequest {
+    // Optional: if true, also returns device metadata
+    bool include_metadata = 1;
+}
+
+// A single battery history entry
+message BatteryHistoryEntry {
+    // Unix timestamp in seconds when this entry was recorded
+    uint32 timestamp = 1;
+    // Battery level percentage (0-100)
+    uint32 battery_level = 2;
+}
+
+// Device metadata information
+message DeviceMetadata {
+    // Device name/identifier
+    string device_name = 1;
+    // Recording interval in minutes
+    uint32 recording_interval_minutes = 2;
+    // Maximum number of entries that can be stored
+    uint32 max_entries = 3;
+}
+
+// Response containing battery history data
+message GetBatteryHistoryResponse {
+    // Array of battery history entries, ordered from oldest to newest
+    repeated BatteryHistoryEntry entries = 1;
+    // Optional device metadata
+    DeviceMetadata metadata = 2;
+    // Current battery level percentage
+    uint32 current_battery_level = 3;
+}
+
+// Request to clear battery history from device storage
+// (For future use when backend sync is implemented)
+message ClearBatteryHistoryRequest {
+}
+
+// Response for clear operation
+message ClearBatteryHistoryResponse {
+    // Number of entries that were cleared
+    uint32 entries_cleared = 1;
+}
+
+// Main request message
+message Request {
+    oneof request_type {
+        GetBatteryHistoryRequest get_history = 1;
+        ClearBatteryHistoryRequest clear_history = 2;
+    }
+}
+
+// Error response
+message ErrorResponse {
+    string message = 1;
+}
+
+// Main response message
+message Response {
+    oneof response_type {
+        ErrorResponse error = 1;
+        GetBatteryHistoryResponse get_history = 2;
+        ClearBatteryHistoryResponse clear_history = 3;
+    }
+}

@@ -1,0 +1,213 @@
+/* Battery History Chart Styles */
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 1rem 0;
+}
+
+.battery-chart {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ed 100%);
+  border-radius: 12px;
+  min-height: 200px;
+}
+
+.chart-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.chart-empty p {
+  margin: 0.25rem 0;
+  color: #666;
+}
+
+.chart-empty-hint {
+  font-size: 0.875rem;
+  color: #999;
+}
+
+/* Grid and axis */
+.grid-line {
+  stroke: #e0e0e0;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.axis-line {
+  stroke: #333;
+  stroke-width: 2;
+}
+
+.axis-label {
+  fill: #666;
+  font-size: 11px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Chart elements */
+.chart-area {
+  transition: opacity 0.3s ease;
+}
+
+.chart-line {
+  fill: none;
+  stroke: #4a90d9;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-point {
+  stroke: white;
+  stroke-width: 2;
+  cursor: pointer;
+  transition: r 0.2s ease, filter 0.2s ease;
+}
+
+.chart-point:hover {
+  r: 7;
+  filter: brightness(1.2);
+}
+
+/* Tooltip */
+.chart-tooltip {
+  position: absolute;
+  background: rgba(30, 30, 30, 0.95);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-100%);
+  white-space: nowrap;
+}
+
+.tooltip-level {
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tooltip-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.tooltip-time {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-top: 0.25rem;
+}
+
+/* Legend */
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Battery level colors */
+.battery-good {
+  background-color: #22c55e;
+}
+
+.battery-medium {
+  background-color: #eab308;
+}
+
+.battery-low {
+  background-color: #ef4444;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .chart-empty {
+    background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  }
+
+  .chart-empty p {
+    color: #aaa;
+  }
+
+  .chart-empty-hint {
+    color: #777;
+  }
+
+  .grid-line {
+    stroke: #444;
+  }
+
+  .axis-line {
+    stroke: #666;
+  }
+
+  .axis-label {
+    fill: #aaa;
+  }
+
+  .chart-line {
+    stroke: #64b5f6;
+  }
+
+  .chart-tooltip {
+    background: rgba(40, 40, 40, 0.98);
+  }
+
+  .tooltip-time {
+    color: #888;
+  }
+
+  .chart-legend {
+    color: #aaa;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .chart-legend {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .axis-label {
+    font-size: 9px;
+  }
+}
