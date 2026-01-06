@@ -47,14 +47,14 @@ class WestCommandsTests(unittest.TestCase):
             "my_awesome_keyboard_with_custom_rpc_support": [
                 "CONFIG_MY_AWESOME_KEYBOARD_SPECIAL_FEATURE=y",
                 "CONFIG_ZMK_STUDIO=y",
-                "CONFIG_ZMK_TEMPLATE_FEATURE=y",
-                "CONFIG_ZMK_TEMPLATE_FEATURE_STUDIO_RPC=y",
+                "CONFIG_ZMK_BATTERY_HISTORY=y",
+                "CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC=y",
             ],
             "my_awesome_keyboard_without_custom_rpc_support": [
                 "CONFIG_MY_AWESOME_KEYBOARD_SPECIAL_FEATURE=y",
                 "# CONFIG_ZMK_STUDIO is not set",
-                "CONFIG_ZMK_TEMPLATE_FEATURE=y",
-                NotFound("CONFIG_ZMK_TEMPLATE_FEATURE_STUDIO_RPC"),
+                "CONFIG_ZMK_BATTERY_HISTORY=y",
+                NotFound("CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC"),
             ]
         }
 

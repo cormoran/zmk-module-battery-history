@@ -1,5 +1,10 @@
 # Nanopb options file for custom.proto
-# This defines max sizes for string fields
+# This defines max sizes for string and repeated fields
 
-zmk.template.SampleResponse.value    max_size:64
+# Max size for error messages
 zmk.template.ErrorResponse.message   max_size:64
+
+# Max number of battery history entries to store/transmit
+# Storing ~30 days of data with 2-hour intervals = ~360 entries
+# For memory safety, we'll limit to 200 entries max
+zmk.template.GetBatteryHistoryResponse.entries max_count:200

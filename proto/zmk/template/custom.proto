@@ -2,17 +2,38 @@ syntax = "proto3";
 
 package zmk.template;
 
-message SampleRequest {
-    int32 value = 1;
+// Battery history entry
+message BatteryHistoryEntry {
+    uint32 timestamp = 1;  // Unix timestamp (seconds since epoch)
+    uint32 battery_percentage = 2;  // Battery percentage 0-100
 }
 
-message SampleResponse {
-    string value = 1;
+// Request to get battery history
+message GetBatteryHistoryRequest {
+    // Empty - returns all stored history
+}
+
+// Response with battery history
+message GetBatteryHistoryResponse {
+    repeated BatteryHistoryEntry entries = 1;
+    uint32 current_battery = 2;  // Current battery percentage
+    uint32 total_entries = 3;  // Total number of entries stored
+}
+
+// Request to clear battery history
+message ClearBatteryHistoryRequest {
+    // Empty - clears all history
+}
+
+// Response after clearing history
+message ClearBatteryHistoryResponse {
+    bool success = 1;
 }
 
 message Request {
     oneof request_type {
-        SampleRequest sample = 1;
+        GetBatteryHistoryRequest get_battery_history = 1;
+        ClearBatteryHistoryRequest clear_battery_history = 2;
     }
 }
 
@@ -23,6 +44,7 @@ message ErrorResponse {
 message Response {
     oneof response_type {
         ErrorResponse error = 1;
-        SampleResponse sample = 2;
+        GetBatteryHistoryResponse battery_history = 2;
+        ClearBatteryHistoryResponse clear_battery_history = 3;
     }
 }

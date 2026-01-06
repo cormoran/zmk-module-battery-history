@@ -1,10 +1,36 @@
-config ZMK_TEMPLATE_FEATURE
-    bool "Enable template feature"
+config ZMK_BATTERY_HISTORY
+    bool "Enable battery history tracking"
+    help
+      Enable tracking of battery consumption over time.
+      This feature monitors battery state changes and stores
+      historical data that can be retrieved via Studio RPC.
 
-if ZMK_TEMPLATE_FEATURE
+if ZMK_BATTERY_HISTORY
 
-config ZMK_TEMPLATE_FEATURE_STUDIO_RPC
-    bool "Enable template feature custom Studio RPC"
+config ZMK_BATTERY_HISTORY_STUDIO_RPC
+    bool "Enable battery history Studio RPC"
     depends on ZMK_STUDIO
+    help
+      Enable Studio RPC interface for battery history.
+      Allows web UI to retrieve and manage battery history data.
+
+config ZMK_BATTERY_HISTORY_MAX_ENTRIES
+    int "Maximum battery history entries"
+    default 200
+    range 10 500
+    help
+      Maximum number of battery history entries to store.
+      Each entry is ~8 bytes. 200 entries = ~1.6KB storage.
+      Older entries are discarded when limit is reached.
+
+config ZMK_BATTERY_HISTORY_SAVE_INTERVAL_MINUTES
+    int "Battery history save interval (minutes)"
+    default 120
+    range 30 1440
+    help
+      Interval in minutes for saving battery state to history.
+      Longer intervals reduce flash wear but decrease accuracy.
+      Default: 120 minutes (2 hours)
+      Range: 30 minutes to 1440 minutes (24 hours)
 
 endif
