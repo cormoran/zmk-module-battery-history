@@ -1,40 +1,21 @@
-# ZMK Module Template with Custom Web UI
+# ZMK Battery History Module
 
-This repository contains a template for a ZMK module with Web UI by using
-**unofficial** custom studio rpc protocol.
+This ZMK module tracks battery consumption history over time and provides a web UI to visualize the data.
 
-Basic usage is the same to official template. Read through the
-[ZMK Module Creation](https://zmk.dev/docs/development/module-creation) page for
-details on how to configure this template.
+## Features
 
-### Supporting custom studio RPC protocol
+- **Battery History Tracking**: Monitors battery levels and stores them in persistent storage
+- **Configurable Save Interval**: Adjust recording frequency to minimize flash wear (default: 2 hours)
+- **Web UI**: Professional interface to view battery consumption charts and manage history
+- **Custom Studio RPC**: Retrieve and clear battery history via ZMK Studio protocol
 
-This template contains sample implementation. Please edit and rename below files
-to implement your protocol.
-
-- proto `proto/zmk/template/custom.proto` and `custom.options`
-- handler `src/studio/custom_handler.c`
-- flags in `Kconfig`
-- test `./tests/studio`
-
-### Implementing Web UI for the custom protocol
-
-`./web` contains boilerplate based on
-[vite template `react-ts`](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts)
-(`npm create vite@latest web -- --template react-ts`) and react hook library
-[@cormoran/react-zmk-studio](https://github.com/cormoran/react-zmk-studio).
-
-Please refer
-[react-zmk-studio README](https://github.com/cormoran/react-zmk-studio/blob/main/README.md).
-
-## Setup (Please edit!)
+## Setup
 
 You can use this zmk-module with below setup.
 
 1. Add dependency to your `config/west.yml`.
 
-   ```yaml:config/west.yml
-   # Please update with your account and repository name after create repository from template
+   ```yaml
    manifest:
    remotes:
        ...
@@ -42,12 +23,10 @@ You can use this zmk-module with below setup.
        url-base: https://github.com/cormoran
    projects:
        ...
-       - name: zmk-module-template-with-custom-studio-rpc
+       - name: zmk-module-battery-history
        remote: cormoran
        revision: main # or latest commit hash
-       # import: true # if this module has other dependencies
-       ...
-       # Below setting required to use unofficial studio custom PRC feature
+       # Below setting required to use unofficial studio custom RPC feature
        - name: zmk
        remote: cormoran
        revision: v0.3+custom-studio-protocol
@@ -55,24 +34,54 @@ You can use this zmk-module with below setup.
            file: app/west.yml
    ```
 
-1. Enable flag in your `config/<shield>.conf`
+2. Enable the module in your `config/<shield>.conf`
 
-   ```conf:<shield>.conf
-   # Enable standalone features
-   CONFIG_ZMK_TEMPLATE_FEATURE=y
+   ```conf
+   # Enable battery history tracking
+   CONFIG_ZMK_BATTERY_HISTORY=y
 
-   # Optionally enable studio custom RPC features
+   # Optionally enable Studio RPC for web UI access
    CONFIG_ZMK_STUDIO=y
-   CONFIG_ZMK_TEMPLATE_FEATURE_STUDIO_RPC=y
+   CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC=y
+
+   # Optional: Configure save interval (minutes)
+   CONFIG_ZMK_BATTERY_HISTORY_SAVE_INTERVAL_MINUTES=120
+
+   # Optional: Configure max entries to store
+   CONFIG_ZMK_BATTERY_HISTORY_MAX_ENTRIES=200
    ```
 
-1. Update your `<keyboard>.keymap` like .....
+## Configuration Options
 
-   ```
-   / {
-       ...
-   }
-   ```
+- `CONFIG_ZMK_BATTERY_HISTORY`: Enable battery history tracking
+- `CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC`: Enable web UI access via Studio RPC
+- `CONFIG_ZMK_BATTERY_HISTORY_MAX_ENTRIES`: Maximum history entries (default: 200, range: 10-500)
+- `CONFIG_ZMK_BATTERY_HISTORY_SAVE_INTERVAL_MINUTES`: Save interval in minutes (default: 120, range: 30-1440)
+
+### Storage Considerations
+
+**Important for nRF52840 boards**: Frequent writes to flash can reduce device lifespan. The default 2-hour interval balances accuracy with flash longevity. For AAA battery monitoring:
+
+- **Recommended**: 120-240 minutes (2-4 hours) for general use
+- **Conservative**: 360-720 minutes (6-12 hours) for maximum flash life
+- **Detailed**: 60 minutes for more granular data (not recommended long-term)
+
+Each entry uses ~8 bytes. 200 entries = ~1.6KB of storage.
+
+## Web UI
+
+Access the web UI at: https://cormoran.github.io/zmk-module-battery-history/
+
+1. Connect your keyboard via USB/Serial
+2. Click "Connect Serial" 
+3. Click "Fetch History" to view battery consumption chart
+4. Use "Clear History" to erase stored data (useful before sending to backend)
+
+The web UI displays:
+- Battery consumption chart over time
+- Current battery level
+- Total data points stored
+- Time range of collected data
 
 ## Development Guide
 

@@ -148,11 +148,18 @@ static int battery_state_changed_listener(const zmk_event_t *eh) {
     LOG_DBG("Battery state changed: %d%%", ev->state_of_charge);
 
     // Only record if this is a significant change (5% or more from last entry)
-    if (history_count == 0 || 
-        abs((int)ev->state_of_charge - (int)history[history_count - 1].battery_percentage) >= 5) {
+    if (history_count == 0) {
         uint32_t timestamp = get_current_timestamp();
         add_history_entry(timestamp, ev->state_of_charge);
         save_to_storage();
+    } else {
+        int diff = (int)ev->state_of_charge - (int)history[history_count - 1].battery_percentage;
+        if (diff < 0) diff = -diff;
+        if (diff >= 5) {
+            uint32_t timestamp = get_current_timestamp();
+            add_history_entry(timestamp, ev->state_of_charge);
+            save_to_storage();
+        }
     }
 
     return 0;
