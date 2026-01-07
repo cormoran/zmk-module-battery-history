@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 LOG_MODULE_REGISTER(zmk_battery_history, CONFIG_ZMK_LOG_LEVEL);
 
@@ -32,7 +33,10 @@ static struct zmk_battery_history_entry history_buffer[MAX_ENTRIES];
 static int history_head = 0;    // Index of the oldest entry
 static int history_count = 0;   // Number of valid entries
 static int unsaved_count = 0;   // Number of entries not yet saved to flash
-static int last_saved_count = 0; // Count at last save (for incremental save)
+
+// Track which entries need saving (for incremental saves)
+// We track the index of the first unsaved entry
+static int first_unsaved_idx = -1;
 
 // Work item for periodic recording
 static void battery_history_work_handler(struct k_work *work);
@@ -43,6 +47,9 @@ static uint8_t current_battery_level = 0;
 
 // Track if this is the first record after boot
 static bool first_record_after_boot = true;
+
+// Track if head has changed since last save (requires full save)
+static bool head_changed_since_save = false;
 
 // Settings handling
 static int battery_history_settings_set(const char *name, size_t len,
@@ -86,29 +93,53 @@ static void add_history_entry(uint16_t timestamp, uint8_t level) {
         // Buffer full, overwrite oldest entry
         write_idx = history_head;
         history_head = (history_head + 1) % MAX_ENTRIES;
+        head_changed_since_save = true;
     }
     
     history_buffer[write_idx].timestamp = timestamp;
     history_buffer[write_idx].battery_level = level;
+    
+    // Track first unsaved entry index
+    if (first_unsaved_idx < 0) {
+        first_unsaved_idx = write_idx;
+    }
     unsaved_count++;
     
-    LOG_DBG("Added battery history entry: timestamp=%u, level=%u (total=%d, unsaved=%d)",
-            timestamp, level, history_count, unsaved_count);
+    LOG_DBG("Added battery history entry: timestamp=%u, level=%u, idx=%d (total=%d, unsaved=%d)",
+            timestamp, level, write_idx, history_count, unsaved_count);
+}
+
+/**
+ * Save a single entry to persistent storage
+ */
+static int save_single_entry(int buffer_idx) {
+    char key[32];
+    snprintf(key, sizeof(key), "battery_history/e%d", buffer_idx);
+    
+    int rc = settings_save_one(key, &history_buffer[buffer_idx], 
+                               sizeof(struct zmk_battery_history_entry));
+    if (rc < 0) {
+        LOG_ERR("Failed to save entry %d: %d", buffer_idx, rc);
+    }
+    return rc;
 }
 
 /**
  * Save history to persistent storage (incremental save)
- * Only saves changed data to reduce flash writes
+ * Only saves changed entries to reduce flash writes
  */
 static int save_history(void) {
     if (unsaved_count == 0) {
         return 0;
     }
     
-    LOG_INF("Saving battery history to flash (count=%d, unsaved=%d)", history_count, unsaved_count);
+    LOG_INF("Saving battery history to flash (count=%d, unsaved=%d, head_changed=%d)", 
+            history_count, unsaved_count, head_changed_since_save);
     
-    // Always save head and count (small data)
-    int rc = settings_save_one("battery_history/head", &history_head, sizeof(history_head));
+    int rc;
+    
+    // Always save head and count (small data, always needed)
+    rc = settings_save_one("battery_history/head", &history_head, sizeof(history_head));
     if (rc < 0) {
         LOG_ERR("Failed to save history head: %d", rc);
         return rc;
@@ -120,17 +151,29 @@ static int save_history(void) {
         return rc;
     }
     
-    // Save the entire buffer - incremental saves would be complex with circular buffer
-    // The main flash wear reduction comes from skipping unchanged records and saving before sleep
-    rc = settings_save_one("battery_history/data", history_buffer, sizeof(history_buffer));
-    if (rc < 0) {
-        LOG_ERR("Failed to save history data: %d", rc);
-        return rc;
+    // Save only the entries that have changed
+    // When head changes (buffer overflow), we need to save all entries that were written
+    // since the first unsaved one
+    if (first_unsaved_idx >= 0) {
+        int entries_to_save = unsaved_count;
+        int idx = first_unsaved_idx;
+        
+        LOG_DBG("Incremental save: %d entries starting from idx %d", entries_to_save, idx);
+        
+        for (int i = 0; i < entries_to_save; i++) {
+            rc = save_single_entry(idx);
+            if (rc < 0) {
+                return rc;
+            }
+            idx = (idx + 1) % MAX_ENTRIES;
+        }
     }
     
-    last_saved_count = history_count;
+    first_unsaved_idx = -1;
     unsaved_count = 0;
-    LOG_INF("Battery history saved successfully");
+    head_changed_since_save = false;
+    
+    LOG_INF("Battery history saved successfully (incremental)");
     return 0;
 }
 
@@ -211,7 +254,7 @@ static void battery_history_work_handler(struct k_work *work) {
 }
 
 /**
- * Settings load handler
+ * Settings load handler - supports both old format (full buffer) and new format (individual entries)
  */
 static int battery_history_settings_set(const char *name, size_t len,
                                         settings_read_cb read_cb, void *cb_arg) {
@@ -226,18 +269,26 @@ static int battery_history_settings_set(const char *name, size_t len,
         if (len != sizeof(history_count)) {
             return -EINVAL;
         }
-        int rc = read_cb(cb_arg, &history_count, sizeof(history_count));
-        if (rc >= 0) {
-            last_saved_count = history_count;
-        }
-        return rc;
+        return read_cb(cb_arg, &history_count, sizeof(history_count));
     }
     
+    // Support old format: full buffer in "data" key
     if (!strcmp(name, "data")) {
         if (len != sizeof(history_buffer)) {
             return -EINVAL;
         }
         return read_cb(cb_arg, history_buffer, sizeof(history_buffer));
+    }
+    
+    // Support new format: individual entries with "eN" keys
+    if (name[0] == 'e') {
+        int idx = atoi(name + 1);
+        if (idx >= 0 && idx < MAX_ENTRIES) {
+            if (len != sizeof(struct zmk_battery_history_entry)) {
+                return -EINVAL;
+            }
+            return read_cb(cb_arg, &history_buffer[idx], sizeof(struct zmk_battery_history_entry));
+        }
     }
     
     return -ENOENT;
@@ -335,12 +386,14 @@ int zmk_battery_history_clear(void) {
     history_head = 0;
     history_count = 0;
     unsaved_count = 0;
-    last_saved_count = 0;
+    first_unsaved_idx = -1;
     first_record_after_boot = true;
+    head_changed_since_save = false;
     memset(history_buffer, 0, sizeof(history_buffer));
     
-    // Save the cleared state
-    save_history();
+    // Save the cleared state (just head and count)
+    settings_save_one("battery_history/head", &history_head, sizeof(history_head));
+    settings_save_one("battery_history/count", &history_count, sizeof(history_count));
     
     LOG_INF("Battery history cleared: %d entries removed", cleared);
     return cleared;
