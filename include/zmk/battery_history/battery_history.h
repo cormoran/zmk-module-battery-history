@@ -13,7 +13,7 @@
  * @brief A single battery history entry
  */
 struct zmk_battery_history_entry {
-    uint32_t timestamp;      // Unix timestamp in seconds
+    uint16_t timestamp;      // Seconds since boot (resets on restart, max ~18 hours)
     uint8_t battery_level;   // Battery percentage (0-100)
 };
 
