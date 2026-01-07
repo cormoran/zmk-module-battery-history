@@ -1,15 +1,15 @@
-# ZMK Module Template - Web Frontend
+# Battery History Web UI
 
-This is a minimal web application template for interacting with ZMK firmware
-modules that implement custom Studio RPC subsystems.
+A responsive web application for viewing battery consumption history from ZMK keyboards.
 
 ## Features
 
-- **Device Connection**: Connect to ZMK devices via Bluetooth (GATT) or Serial
-- **Custom RPC**: Communicate with your custom firmware module using protobuf
-- **React + TypeScript**: Modern web development with Vite for fast builds
-- **react-zmk-studio**: Uses the `@cormoran/zmk-studio-react-hook` library for
-  simplified ZMK integration
+- **Real-time Battery Display**: Large, color-coded current battery level indicator
+- **History Chart**: Interactive SVG chart showing battery levels over time
+- **Statistics Dashboard**: Min/max/average levels, drain rate, estimated remaining time
+- **Device Metadata**: View recording interval and storage capacity
+- **Dark Mode**: Automatic dark mode based on system preferences
+- **Responsive Design**: Works on desktop and mobile devices
 
 ## Quick Start
 
@@ -36,38 +36,46 @@ npm test
 src/
 ├── main.tsx              # React entry point
 ├── App.tsx               # Main application with connection UI
-├── App.css               # Styles
+├── App.css               # Global styles
+├── components/           # UI components
+│   ├── BatteryHistorySection.tsx   # Main battery history display
+│   ├── BatteryHistoryChart.tsx     # SVG chart component
+│   ├── BatteryIndicator.tsx        # Battery level indicator
+│   └── *.css                       # Component styles
 └── proto/                # Generated protobuf TypeScript types
-    └── zmk/template/
-        └── custom.ts
+    └── zmk/battery_history/
+        └── battery_history.ts
 
 test/
-├── App.spec.tsx              # Tests for App component
-└── RPCTestSection.spec.tsx   # Tests for RPC functionality
+├── App.spec.tsx                    # Tests for App component
+├── BatteryHistorySection.spec.tsx  # Tests for battery history
+└── setup.ts                        # Jest setup
 ```
 
 ## How It Works
 
-### 1. Protocol Definition
+### Protocol Definition
 
-The protobuf schema is defined in `../proto/zmk/template/custom.proto`:
+The protobuf schema is defined in `../proto/zmk/battery_history/battery_history.proto`:
 
 ```proto
-message Request {
-    oneof request_type {
-        SampleRequest sample = 1;
-    }
+message GetBatteryHistoryRequest {
+    bool include_metadata = 1;
 }
 
-message Response {
-    oneof response_type {
-        ErrorResponse error = 1;
-        SampleResponse sample = 2;
-    }
+message BatteryHistoryEntry {
+    uint32 timestamp = 1;
+    uint32 battery_level = 2;
+}
+
+message GetBatteryHistoryResponse {
+    repeated BatteryHistoryEntry entries = 1;
+    DeviceMetadata metadata = 2;
+    uint32 current_battery_level = 3;
 }
 ```
 
-### 2. Code Generation
+### Code Generation
 
 TypeScript types are generated using `ts-proto`:
 
@@ -75,31 +83,22 @@ TypeScript types are generated using `ts-proto`:
 npm run generate
 ```
 
-This runs `buf generate` which uses the configuration in `buf.gen.yaml`.
+### Using the Components
 
-### 3. Using react-zmk-studio
+The main component is `BatteryHistorySection` which handles:
 
-The app uses the `@cormoran/zmk-studio-react-hook` library:
+1. Finding the `zmk__battery_history` subsystem
+2. Fetching battery history data via RPC
+3. Displaying the chart, statistics, and current level
 
 ```typescript
-import { useZMKApp, ZMKCustomSubsystem } from "@cormoran/zmk-studio-react-hook";
+import { BatteryHistorySection } from "./components/BatteryHistorySection";
 
-// Connect to device
-const { state, connect, findSubsystem, isConnected } = useZMKApp();
-
-// Find your subsystem
-const subsystem = findSubsystem("zmk__template");
-
-// Create service and make RPC calls
-const service = new ZMKCustomSubsystem(state.connection, subsystem.index);
-const response = await service.callRPC(payload);
+// In a connected context:
+<BatteryHistorySection />
 ```
 
 ## Testing
-
-This template includes Jest tests as a reference implementation for template users.
-
-### Running Tests
 
 ```bash
 # Run all tests
@@ -112,80 +111,9 @@ npm run test:watch
 npm run test:coverage
 ```
 
-### Test Structure
-
-The tests demonstrate how to use the `react-zmk-studio` test helpers:
-
-- **App.spec.tsx**: Basic rendering tests for the main application
-- **RPCTestSection.spec.tsx**: Tests showing how to mock ZMK connection and test
-  components that interact with devices
-
-### Writing Tests
-
-Use the test helpers from `@cormoran/zmk-studio-react-hook/testing`:
-
-```typescript
-import {
-  createConnectedMockZMKApp,
-  ZMKAppProvider,
-} from "@cormoran/zmk-studio-react-hook/testing";
-
-// Create a mock connected device with subsystems
-const mockZMKApp = createConnectedMockZMKApp({
-  deviceName: "Test Device",
-  subsystems: ["zmk__template"],
-});
-
-// Wrap your component with the provider
-render(
-  <ZMKAppProvider value={mockZMKApp}>
-    <YourComponent />
-  </ZMKAppProvider>
-);
-```
-
-See the test files in `./test/` for complete examples.
-
-## Customization
-
-To adapt this template for your own ZMK module:
-
-1. **Update the proto file**: Modify `../proto/zmk/template/custom.proto` with
-   your message types
-2. **Regenerate types**: Run `npm run generate`
-3. **Update subsystem identifier**: Change `SUBSYSTEM_IDENTIFIER` in `App.tsx`
-   to match your firmware registration
-4. **Update RPC logic**: Modify the request/response handling in `App.tsx`
-5. **Update tests**: Modify tests to match your custom subsystem identifier and
-   functionality
-
 ## Dependencies
 
-- **@cormoran/zmk-studio-react-hook**: React hooks for ZMK Studio (includes
-  connection management and RPC utilities)
-- **@zmkfirmware/zmk-studio-ts-client**: Patched ZMK Studio TypeScript client
-  with custom RPC support
-- **ts-proto**: Protocol buffers code generator for TypeScript
+- **@cormoran/zmk-studio-react-hook**: React hooks for ZMK Studio
+- **@zmkfirmware/zmk-studio-ts-client**: ZMK Studio TypeScript client
 - **React 19**: Modern React with hooks
 - **Vite**: Fast build tool and dev server
-
-### Development Dependencies
-
-- **Jest**: Testing framework
-- **@testing-library/react**: React testing utilities
-- **ts-jest**: TypeScript support for Jest
-- **identity-obj-proxy**: CSS mock for testing
-
-## Development Notes
-
-- The `react-zmk-studio` directory contains a copy of the library for
-  reference - it's automatically built and linked via `package.json`
-- Proto generation uses `buf` and `ts-proto` for clean TypeScript types
-- Connection state is managed by the `useZMKApp` hook from react-zmk-studio
-- RPC calls are made through `ZMKCustomSubsystem` service class
-
-## See Also
-
-- [design.md](./design.md) - Detailed frontend architecture documentation
-- [react-zmk-studio/README.md](./react-zmk-studio/README.md) - react-zmk-studio
-  library documentation

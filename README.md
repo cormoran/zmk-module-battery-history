@@ -1,204 +1,153 @@
-# ZMK Module Template with Custom Web UI
+# ZMK Battery History Module
 
-This repository contains a template for a ZMK module with Web UI by using
-**unofficial** custom studio rpc protocol.
+Track and visualize battery consumption history for your ZMK-powered keyboard. This module stores battery level data over time and provides a web interface to analyze battery life patterns.
 
-Basic usage is the same to official template. Read through the
-[ZMK Module Creation](https://zmk.dev/docs/development/module-creation) page for
-details on how to configure this template.
+## Features
 
-### Supporting custom studio RPC protocol
+- **Battery History Tracking**: Automatically records battery levels at configurable intervals
+- **Flash-Wear Optimization**: Batch writes to minimize flash storage wear (important for nRF52840-based boards)
+- **Web UI Dashboard**: Beautiful, responsive interface to view battery history
+- **Statistics**: View drain rate, estimated remaining time, and historical trends
+- **Dark Mode**: Full dark mode support for comfortable viewing
 
-This template contains sample implementation. Please edit and rename below files
-to implement your protocol.
+## Quick Start
 
-- proto `proto/zmk/template/custom.proto` and `custom.options`
-- handler `src/studio/custom_handler.c`
-- flags in `Kconfig`
-- test `./tests/studio`
+### 1. Add to your ZMK config
 
-### Implementing Web UI for the custom protocol
+Add this module to your `config/west.yml`:
 
-`./web` contains boilerplate based on
-[vite template `react-ts`](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts)
-(`npm create vite@latest web -- --template react-ts`) and react hook library
-[@cormoran/react-zmk-studio](https://github.com/cormoran/react-zmk-studio).
+```yaml
+manifest:
+  remotes:
+    - name: cormoran
+      url-base: https://github.com/cormoran
+  projects:
+    - name: zmk-module-battery-history
+      remote: cormoran
+      revision: main
+    # Required: Use the custom studio protocol fork
+    - name: zmk
+      remote: cormoran
+      revision: v0.3+custom-studio-protocol
+      import:
+        file: app/west.yml
+```
 
-Please refer
-[react-zmk-studio README](https://github.com/cormoran/react-zmk-studio/blob/main/README.md).
+### 2. Enable in your shield config
 
-## Setup (Please edit!)
+Add to your `config/<shield>.conf`:
 
-You can use this zmk-module with below setup.
+```conf
+# Enable battery history tracking
+CONFIG_ZMK_BATTERY_HISTORY=y
 
-1. Add dependency to your `config/west.yml`.
+# Enable web UI access via Studio protocol
+CONFIG_ZMK_STUDIO=y
+CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC=y
+```
 
-   ```yaml:config/west.yml
-   # Please update with your account and repository name after create repository from template
-   manifest:
-   remotes:
-       ...
-       - name: cormoran
-       url-base: https://github.com/cormoran
-   projects:
-       ...
-       - name: zmk-module-template-with-custom-studio-rpc
-       remote: cormoran
-       revision: main # or latest commit hash
-       # import: true # if this module has other dependencies
-       ...
-       # Below setting required to use unofficial studio custom PRC feature
-       - name: zmk
-       remote: cormoran
-       revision: v0.3+custom-studio-protocol
-       import:
-           file: app/west.yml
-   ```
+### 3. Access the Web UI
 
-1. Enable flag in your `config/<shield>.conf`
+1. Connect your keyboard via USB
+2. Visit the web UI (hosted on GitHub Pages or run locally)
+3. Click "Connect via USB" to view your battery history
 
-   ```conf:<shield>.conf
-   # Enable standalone features
-   CONFIG_ZMK_TEMPLATE_FEATURE=y
+## Configuration Options
 
-   # Optionally enable studio custom RPC features
-   CONFIG_ZMK_STUDIO=y
-   CONFIG_ZMK_TEMPLATE_FEATURE_STUDIO_RPC=y
-   ```
+| Config | Default | Description |
+|--------|---------|-------------|
+| `CONFIG_ZMK_BATTERY_HISTORY_MAX_ENTRIES` | 192 | Maximum stored entries (~8 days at 1hr intervals) |
+| `CONFIG_ZMK_BATTERY_HISTORY_INTERVAL_MINUTES` | 60 | Recording interval in minutes |
+| `CONFIG_ZMK_BATTERY_HISTORY_SAVE_THRESHOLD` | 4 | Entries before saving to flash (reduces wear) |
 
-1. Update your `<keyboard>.keymap` like .....
+### Flash Wear Considerations
 
-   ```
-   / {
-       ...
-   }
-   ```
+For devices like the XIAO nRF52840, frequent flash writes can reduce storage lifespan. The default settings balance data accuracy with flash longevity:
 
-## Development Guide
+- Records every 60 minutes
+- Saves to flash every 4 entries (4 hours)
+- Stores up to 192 entries (~8 days of history)
 
-### Setup
+Adjust `CONFIG_ZMK_BATTERY_HISTORY_SAVE_THRESHOLD` higher if you want less frequent saves.
 
-There are two west workspace layout options.
+## Web UI
 
-#### Option1: Download dependencies in parent directory
+The web interface provides:
 
-This option is west's standard way. Choose this option if you want to re-use dependent projects in other zephyr module development.
+- **Current Battery Level**: Large, color-coded display
+- **History Chart**: Interactive graph showing battery over time
+- **Statistics**: Min/max/average levels, drain rate, estimated remaining time
+- **Device Metadata**: Recording interval, storage capacity
+
+### Running Locally
 
 ```bash
-mkdir west-workspace
-cd west-workspace # this directory becomes west workspace root (topdir)
-git clone <this repository>
-# rm -r .west # if exists to reset workspace
-west init -l . --mf tests/west-test.yml
-west update --narrow
-west zephyr-export
+cd web
+npm install
+npm run dev
 ```
 
-The directory structure becomes like below:
-
-```
-west-workspace
-  - .west/config
-  - build : build output directory
-  - <this repository>
-  # other dependencies
-  - zmk
-  - zephyr
-  - ...
-  # You can develop other zephyr modules in this workspace
-  - your-other-repo
-```
-
-You can switch between modules by removing `west-workspace/.west` and re-executing `west init ...`.
-
-#### Option2: Download dependencies in ./dependencies (Enabled in dev-container)
-
-Choose this option if you want to download dependencies under this directory (like node_modules in npm). This option is useful for specifying cache target in CI. The layout is relatively easy to recognize if you want to isolate dependencies.
+### Building for Production
 
 ```bash
-git clone <this repository>
-cd <cloned directory>
-west init -l west --mf west-test-standalone.yml
-# If you use dev container, start from below commands. Above commands are executed
-# automatically.
-west update --narrow
-west zephyr-export
+cd web
+npm run build
 ```
 
-The directory structure becomes like below:
+## Development
+
+### Project Structure
 
 ```
-<this repository>
-  - .west/config
-  - build : build output directory
-  - dependencies
-    - zmk
-    - zephyr
-    - ...
+├── proto/zmk/battery_history/    # Protocol buffer definitions
+├── src/battery_history/          # C implementation
+├── include/zmk/battery_history/  # Header files
+├── web/                          # React web UI
+│   ├── src/components/           # UI components
+│   └── test/                     # Jest tests
+└── tests/                        # ZMK firmware tests
 ```
 
-### Dev container
+### Building & Testing
 
-Dev container is configured for setup option2. The container creates below volumes to re-use resources among containers.
-
-- zmk-dependencies: dependencies dir for setup option2
-- zmk-build: build output directory
-- zmk-root-user: /root, the same to ZMK's official dev container
-
-### Web UI
-
-Please refer [./web/README.md](./web/README.md).
-
-## Test
-
-**ZMK firmware test**
-
-`./tests` directory contains test config for posix to confirm module functionality and config for xiao board to confirm build works.
-
-Tests can be executed by below command:
-
+**Firmware tests:**
 ```bash
-# Run all test case and verify results
 python -m unittest
 ```
 
-If you want to execute west command manually, run below. (for zmk-build, the result is not verified.)
-
-```
-# Build test firmware for xiao
-# `-m tests/zmk-config .` means tests/zmk-config and this repo are added as additional zephyr module
-west zmk-build tests/zmk-config/config -m tests/zmk-config .
-
-# Run zmk test cases
-# -m . is required to add this module to build
-west zmk-test tests -m .
-```
-
-**Web UI test**
-
-The `./web` directory includes Jest tests. See [./web/README.md](./web/README.md#testing) for more details.
-
+**Web UI tests:**
 ```bash
 cd web
 npm test
 ```
 
-## Publishing Web UI
+## API Reference
 
-Github actions are pre-configured to publish web UI to github pages.
+### RPC Protocol
 
-1. Visit Settings>Pages
-1. Set source as "Github Actions"
-1. Visit Actions>"Test and Build Web UI"
-1. Click "Run workflow"
+The module exposes these RPC endpoints via the `zmk__battery_history` subsystem:
 
-Then, the Web UI will be available in
-`https://<your github account>.github.io/<repository name>/` like https://cormoran.github.io/zmk-module-template-with-custom-studio-rpc.
+- `GetBatteryHistory`: Retrieve all stored battery history entries
+- `ClearBatteryHistory`: Clear stored history (for future backend sync support)
 
-## More Info
+### C API
 
-For more info on modules, you can read through through the
-[Zephyr modules page](https://docs.zephyrproject.org/3.5.0/develop/modules.html)
-and [ZMK's page on using modules](https://zmk.dev/docs/features/modules).
-[Zephyr's west manifest page](https://docs.zephyrproject.org/3.5.0/develop/west/manifest.html#west-manifests)
-may also be of use.
+```c
+#include <zmk/battery_history/battery_history.h>
+
+// Get number of stored entries
+int zmk_battery_history_get_count(void);
+
+// Get entry by index (0 = oldest)
+int zmk_battery_history_get_entry(int index, struct zmk_battery_history_entry *entry);
+
+// Get current battery level
+int zmk_battery_history_get_current_level(void);
+
+// Clear all history
+int zmk_battery_history_clear(void);
+```
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
