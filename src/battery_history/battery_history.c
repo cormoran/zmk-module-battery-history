@@ -23,6 +23,8 @@ LOG_MODULE_REGISTER(zmk_battery_history, CONFIG_ZMK_LOG_LEVEL);
 #define SAVE_THRESHOLD CONFIG_ZMK_BATTERY_HISTORY_SAVE_THRESHOLD
 
 // Minimum time interval (in seconds) before recording same battery level
+// We use 4x the recording interval to reduce redundant entries when battery is stable
+// For example: with 60min interval, we skip same-level records unless 4 hours have passed
 #define MIN_SAME_LEVEL_INTERVAL_SEC (CONFIG_ZMK_BATTERY_HISTORY_INTERVAL_MINUTES * 60 * 4)
 
 // Circular buffer for battery history
@@ -118,9 +120,8 @@ static int save_history(void) {
         return rc;
     }
     
-    // Save individual entries that have changed
-    // For simplicity and reliability, save entire buffer when structure changes significantly
-    // But use incremental naming to allow future optimization
+    // Save the entire buffer - incremental saves would be complex with circular buffer
+    // The main flash wear reduction comes from skipping unchanged records and saving before sleep
     rc = settings_save_one("battery_history/data", history_buffer, sizeof(history_buffer));
     if (rc < 0) {
         LOG_ERR("Failed to save history data: %d", rc);
@@ -158,6 +159,8 @@ static bool should_record_entry(uint16_t timestamp, uint8_t level) {
     
     // If level is the same, only record if enough time has passed
     // This reduces redundant entries when battery is stable
+    // Note: Since timestamp resets on boot, wrap-around is not a concern here
+    // as we always record first entry after boot
     uint16_t time_diff = timestamp - last_entry.timestamp;
     if (time_diff >= MIN_SAME_LEVEL_INTERVAL_SEC) {
         return true;
