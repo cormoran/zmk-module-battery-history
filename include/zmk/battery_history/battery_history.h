@@ -12,7 +12,7 @@
 /**
  * @brief A single battery history entry
  */
-struct zmk_battery_history_entry {
+struct __attribute__((packed)) zmk_battery_history_entry {
     uint16_t timestamp;      // Seconds since boot (resets on each restart)
     uint8_t battery_level;   // Battery percentage (0-100)
 };

@@ -36,21 +36,22 @@ config ZMK_BATTERY_HISTORY_MAX_ENTRIES
 
 config ZMK_BATTERY_HISTORY_INTERVAL_MINUTES
     int "Battery history recording interval in minutes"
-    default 60
-    range 15 1440
+    default 5
+    range 1 1440
     help
-      How often to record a battery level entry in minutes.
-      Default is 60 minutes (1 hour) to balance accuracy and flash wear.
-      Minimum is 15 minutes, maximum is 1440 minutes (24 hours).
+      How often to check and potentially record a battery level entry in minutes.
+      Default is 5 minutes. The guard logic reduces actual writes by skipping
+      records when battery level hasn't changed significantly.
+      Minimum is 1 minute, maximum is 1440 minutes (24 hours).
 
-config ZMK_BATTERY_HISTORY_SAVE_THRESHOLD
-    int "Number of new entries before saving to persistent storage"
-    default 4
-    range 1 24
+config ZMK_BATTERY_HISTORY_SAVE_LEVEL_THRESHOLD
+    int "Battery level change threshold for saving (percentage)"
+    default 2
+    range 1 10
     help
-      How many new entries to accumulate before writing to persistent storage.
-      Higher values reduce flash write frequency but risk losing data on reset.
-      Default is 4 entries (at 1 hour interval, saves every 4 hours).
-      This helps extend flash storage life on devices like XIAO nrf52840.
+      Save to persistent storage when battery level has dropped by this percentage
+      since the last save. Default is 2%, meaning save triggers when battery
+      drops 2% from the last saved level. This balances data freshness with
+      flash wear reduction.
 
 endif

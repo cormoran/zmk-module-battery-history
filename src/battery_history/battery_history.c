@@ -21,11 +21,11 @@ LOG_MODULE_REGISTER(zmk_battery_history, CONFIG_ZMK_LOG_LEVEL);
 
 #define MAX_ENTRIES CONFIG_ZMK_BATTERY_HISTORY_MAX_ENTRIES
 #define RECORDING_INTERVAL_MS (CONFIG_ZMK_BATTERY_HISTORY_INTERVAL_MINUTES * 60 * 1000)
-#define SAVE_THRESHOLD CONFIG_ZMK_BATTERY_HISTORY_SAVE_THRESHOLD
+#define SAVE_LEVEL_THRESHOLD CONFIG_ZMK_BATTERY_HISTORY_SAVE_LEVEL_THRESHOLD
 
 // Minimum time interval (in seconds) before recording same battery level
 // We use 4x the recording interval to reduce redundant entries when battery is stable
-// For example: with 60min interval, we skip same-level records unless 4 hours have passed
+// For example: with 5min interval, we skip same-level records unless 20 minutes have passed
 #define MIN_SAME_LEVEL_INTERVAL_SEC (CONFIG_ZMK_BATTERY_HISTORY_INTERVAL_MINUTES * 60 * 4)
 
 // Circular buffer for battery history
@@ -37,6 +37,9 @@ static int unsaved_count = 0;   // Number of entries not yet saved to flash
 // Track which entries need saving (for incremental saves)
 // We track the index of the first unsaved entry
 static int first_unsaved_idx = -1;
+
+// Battery level at last save (for threshold-based saving)
+static uint8_t last_saved_battery_level = 100;
 
 // Work item for periodic recording
 static void battery_history_work_handler(struct k_work *work);
@@ -110,23 +113,23 @@ static void add_history_entry(uint16_t timestamp, uint8_t level) {
 }
 
 /**
- * Save a single entry to persistent storage
+ * Set a single entry in settings (without immediate flush)
  */
-static int save_single_entry(int buffer_idx) {
+static int set_single_entry(int buffer_idx) {
     char key[32];
     snprintf(key, sizeof(key), "battery_history/e%d", buffer_idx);
     
-    int rc = settings_save_one(key, &history_buffer[buffer_idx], 
-                               sizeof(struct zmk_battery_history_entry));
+    int rc = settings_runtime_set(key, &history_buffer[buffer_idx], 
+                                  sizeof(struct zmk_battery_history_entry));
     if (rc < 0) {
-        LOG_ERR("Failed to save entry %d: %d", buffer_idx, rc);
+        LOG_ERR("Failed to set entry %d: %d", buffer_idx, rc);
     }
     return rc;
 }
 
 /**
  * Save history to persistent storage (incremental save)
- * Only saves changed entries to reduce flash writes
+ * Uses settings_runtime_set for each item, then a single flush at the end
  */
 static int save_history(void) {
     if (unsaved_count == 0) {
@@ -138,22 +141,20 @@ static int save_history(void) {
     
     int rc;
     
-    // Always save head and count (small data, always needed)
-    rc = settings_save_one("battery_history/head", &history_head, sizeof(history_head));
+    // Set head and count (small data, always needed)
+    rc = settings_runtime_set("battery_history/head", &history_head, sizeof(history_head));
     if (rc < 0) {
-        LOG_ERR("Failed to save history head: %d", rc);
+        LOG_ERR("Failed to set history head: %d", rc);
         return rc;
     }
     
-    rc = settings_save_one("battery_history/count", &history_count, sizeof(history_count));
+    rc = settings_runtime_set("battery_history/count", &history_count, sizeof(history_count));
     if (rc < 0) {
-        LOG_ERR("Failed to save history count: %d", rc);
+        LOG_ERR("Failed to set history count: %d", rc);
         return rc;
     }
     
-    // Save only the entries that have changed
-    // When head changes (buffer overflow), we need to save all entries that were written
-    // since the first unsaved one
+    // Set only the entries that have changed
     if (first_unsaved_idx >= 0) {
         int entries_to_save = unsaved_count;
         int idx = first_unsaved_idx;
@@ -161,7 +162,7 @@ static int save_history(void) {
         LOG_DBG("Incremental save: %d entries starting from idx %d", entries_to_save, idx);
         
         for (int i = 0; i < entries_to_save; i++) {
-            rc = save_single_entry(idx);
+            rc = set_single_entry(idx);
             if (rc < 0) {
                 return rc;
             }
@@ -169,12 +170,32 @@ static int save_history(void) {
         }
     }
     
+    // Single flush to commit all changes to storage
+    rc = settings_save();
+    if (rc < 0) {
+        LOG_ERR("Failed to flush settings: %d", rc);
+        return rc;
+    }
+    
     first_unsaved_idx = -1;
     unsaved_count = 0;
     head_changed_since_save = false;
+    last_saved_battery_level = current_battery_level;
     
     LOG_INF("Battery history saved successfully (incremental)");
     return 0;
+}
+
+/**
+ * Check if we should save based on battery level drop
+ * Returns true if battery has dropped by threshold since last save
+ */
+static bool should_save_by_level(void) {
+    if (last_saved_battery_level > current_battery_level) {
+        int drop = last_saved_battery_level - current_battery_level;
+        return drop >= SAVE_LEVEL_THRESHOLD;
+    }
+    return false;
 }
 
 /**
@@ -237,8 +258,8 @@ static void record_battery_level(void) {
     
     add_history_entry(timestamp, current_battery_level);
     
-    // Save to flash if threshold reached
-    if (unsaved_count >= SAVE_THRESHOLD) {
+    // Save to flash if battery level has dropped by threshold
+    if (should_save_by_level()) {
         save_history();
     }
 }
@@ -299,6 +320,11 @@ static int battery_history_settings_set(const char *name, size_t len,
  */
 static int battery_history_settings_commit(void) {
     LOG_INF("Battery history loaded: count=%d, head=%d", history_count, history_head);
+    // Initialize last_saved_battery_level from the most recent entry if available
+    struct zmk_battery_history_entry last_entry;
+    if (get_last_entry(&last_entry)) {
+        last_saved_battery_level = last_entry.battery_level;
+    }
     return 0;
 }
 
@@ -342,13 +368,14 @@ ZMK_SUBSCRIPTION(battery_history_activity, zmk_activity_state_changed);
  */
 static int battery_history_init(void) {
     LOG_INF("Initializing battery history module");
-    LOG_INF("Max entries: %d, Recording interval: %d minutes, Save threshold: %d",
-            MAX_ENTRIES, CONFIG_ZMK_BATTERY_HISTORY_INTERVAL_MINUTES, SAVE_THRESHOLD);
+    LOG_INF("Max entries: %d, Recording interval: %d minutes, Save level threshold: %d%%",
+            MAX_ENTRIES, CONFIG_ZMK_BATTERY_HISTORY_INTERVAL_MINUTES, SAVE_LEVEL_THRESHOLD);
     
     // Record initial battery level
     int level = zmk_battery_state_of_charge();
     if (level >= 0) {
         current_battery_level = (uint8_t)level;
+        last_saved_battery_level = current_battery_level;
     }
     
     // Start periodic recording
@@ -389,11 +416,13 @@ int zmk_battery_history_clear(void) {
     first_unsaved_idx = -1;
     first_record_after_boot = true;
     head_changed_since_save = false;
+    last_saved_battery_level = current_battery_level;
     memset(history_buffer, 0, sizeof(history_buffer));
     
-    // Save the cleared state (just head and count)
-    settings_save_one("battery_history/head", &history_head, sizeof(history_head));
-    settings_save_one("battery_history/count", &history_count, sizeof(history_count));
+    // Save the cleared state using runtime_set + flush
+    settings_runtime_set("battery_history/head", &history_head, sizeof(history_head));
+    settings_runtime_set("battery_history/count", &history_count, sizeof(history_count));
+    settings_save();
     
     LOG_INF("Battery history cleared: %d entries removed", cleared);
     return cleared;
