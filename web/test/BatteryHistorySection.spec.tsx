@@ -26,8 +26,9 @@ describe("BatteryHistorySection Component", () => {
         </ZMKAppProvider>
       );
 
-      // Check for battery history UI elements
-      expect(screen.getByText(/Battery History/i)).toBeInTheDocument();
+      // Check for battery history UI elements - use getAllByText since there are multiple elements
+      const batteryHistoryElements = screen.getAllByText(/Battery History/i);
+      expect(batteryHistoryElements.length).toBeGreaterThan(0);
     });
 
     it("should show refresh and clear buttons", () => {
@@ -61,9 +62,10 @@ describe("BatteryHistorySection Component", () => {
         </ZMKAppProvider>
       );
 
-      // Check for warning message
+      // Check for warning message - use getAllByText since CONFIG appears in multiple places
       expect(screen.getByText(/Battery History module not found/i)).toBeInTheDocument();
-      expect(screen.getByText(/CONFIG_ZMK_BATTERY_HISTORY/i)).toBeInTheDocument();
+      const configElements = screen.getAllByText(/CONFIG_ZMK_BATTERY_HISTORY/i);
+      expect(configElements.length).toBeGreaterThan(0);
     });
   });
 

@@ -16,10 +16,10 @@ import {
   ZMKCustomSubsystem,
   ZMKAppContext,
 } from "@cormoran/zmk-studio-react-hook";
-import { Request, Response } from "./proto/zmk/template/custom";
+import { Request, Response } from "./proto/zmk/battery_history/battery_history";
 import { BatteryHistorySection, BATTERY_HISTORY_SUBSYSTEM } from "./components/BatteryHistorySection";
 
-// Custom subsystem identifier for template - must match firmware registration
+// Custom subsystem identifier for battery history - must match firmware registration
 export const SUBSYSTEM_IDENTIFIER = BATTERY_HISTORY_SUBSYSTEM;
 
 function App() {
@@ -99,7 +99,7 @@ function App() {
 
 export function RPCTestSection() {
   const zmkApp = useContext(ZMKAppContext);
-  const [inputValue, setInputValue] = useState<number>(42);
+  const [includeMetadata, setIncludeMetadata] = useState<boolean>(true);
   const [response, setResponse] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -107,8 +107,8 @@ export function RPCTestSection() {
 
   const subsystem = zmkApp.findSubsystem(SUBSYSTEM_IDENTIFIER);
 
-  // Send a sample request to the firmware
-  const sendSampleRequest = async () => {
+  // Send a battery history request to the firmware
+  const sendBatteryHistoryRequest = async () => {
     if (!zmkApp.state.connection || !subsystem) return;
 
     setIsLoading(true);
@@ -122,8 +122,8 @@ export function RPCTestSection() {
 
       // Create the request using ts-proto
       const request = Request.create({
-        sample: {
-          value: inputValue,
+        getHistory: {
+          includeMetadata: includeMetadata,
         },
       });
 
@@ -135,8 +135,14 @@ export function RPCTestSection() {
         const resp = Response.decode(responsePayload);
         console.log("Decoded response:", resp);
 
-        if (resp.sample) {
-          setResponse(resp.sample.value);
+        if (resp.getHistory) {
+          const entries = resp.getHistory.entries || [];
+          const metadata = resp.getHistory.metadata;
+          setResponse(
+            `Battery Level: ${resp.getHistory.currentBatteryLevel}%\n` +
+            `Entries: ${entries.length}\n` +
+            (metadata ? `Device: ${metadata.deviceName}\nInterval: ${metadata.recordingIntervalMinutes}min` : "")
+          );
         } else if (resp.error) {
           setResponse(`Error: ${resp.error.message}`);
         }
@@ -157,7 +163,7 @@ export function RPCTestSection() {
         <div className="warning-message">
           <p>
             ⚠️ Subsystem "{SUBSYSTEM_IDENTIFIER}" not found. Make sure your
-            firmware includes the template module.
+            firmware includes the battery history module.
           </p>
         </div>
       </section>
@@ -167,22 +173,24 @@ export function RPCTestSection() {
   return (
     <section className="card">
       <h2>RPC Test</h2>
-      <p>Send a sample request to the firmware:</p>
+      <p>Send a battery history request to the firmware:</p>
 
       <div className="input-group">
-        <label htmlFor="value-input">Value:</label>
-        <input
-          id="value-input"
-          type="number"
-          value={inputValue}
-          onChange={(e) => setInputValue(parseInt(e.target.value) || 0)}
-        />
+        <label htmlFor="metadata-checkbox">
+          <input
+            id="metadata-checkbox"
+            type="checkbox"
+            checked={includeMetadata}
+            onChange={(e) => setIncludeMetadata(e.target.checked)}
+          />
+          Include Metadata
+        </label>
       </div>
 
       <button
         className="btn btn-primary"
         disabled={isLoading}
-        onClick={sendSampleRequest}
+        onClick={sendBatteryHistoryRequest}
       >
         {isLoading ? "⏳ Sending..." : "📤 Send Request"}
       </button>
