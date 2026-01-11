@@ -110,10 +110,31 @@
   margin-bottom: 2rem;
 }
 
-.chart-section h3 {
+.chart-section h3,
+.chart-section h4 {
   margin: 0 0 1rem 0;
   font-size: 1rem;
   color: #475569;
+}
+
+/* Source Section (for split keyboards) */
+.source-section {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.source-section h3 {
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.source-section .chart-section {
+  margin-bottom: 1.5rem;
 }
 
 /* Stats Section */
@@ -223,8 +244,19 @@
   }
 
   .chart-section h3,
+  .chart-section h4,
   .battery-stats h3 {
     color: #94a3b8;
+  }
+
+  .source-section {
+    background: #2d2d2d;
+    border-color: #404040;
+  }
+
+  .source-section h3 {
+    color: #e2e8f0;
+    border-color: #404040;
   }
 
   .stat-item {

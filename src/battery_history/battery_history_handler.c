@@ -18,6 +18,10 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
+// Maximum number of sources (central + peripherals) to report in RPC response
+// This limit is based on protobuf array size constraints
+#define MAX_SOURCES_IN_RESPONSE 8
+
 /**
  * Metadata for the battery history custom subsystem.
  * - ui_urls: URLs where the custom UI can be loaded from
@@ -97,23 +101,50 @@ static int handle_get_history_request(const zmk_battery_history_GetBatteryHistor
     zmk_battery_history_GetBatteryHistoryResponse result =
         zmk_battery_history_GetBatteryHistoryResponse_init_zero;
 
-    // Get current battery level
-    int current_level = zmk_battery_history_get_current_level();
-    if (current_level >= 0) {
-        result.current_battery_level = (uint32_t)current_level;
-    }
+    // Get source count
+    int source_count = zmk_battery_history_get_source_count();
 
-    // Get history entries
-    int count = zmk_battery_history_get_count();
-    result.entries_count = 0;
+    // Populate per-source data
+    result.sources_count = 0;
+    for (int src = 0; src < source_count && src < MAX_SOURCES_IN_RESPONSE; src++) {
+        // Get current battery level for this source
+        int current_level = zmk_battery_history_get_current_level_for_source(src);
+        int count = zmk_battery_history_get_count_for_source(src);
 
-    for (int i = 0; i < count && i < CONFIG_ZMK_BATTERY_HISTORY_MAX_ENTRIES; i++) {
-        struct zmk_battery_history_entry entry;
-        if (zmk_battery_history_get_entry(i, &entry) == 0) {
-            result.entries[result.entries_count].timestamp = entry.timestamp;
-            result.entries[result.entries_count].battery_level = entry.battery_level;
-            result.entries_count++;
+        // Skip sources with no data and invalid battery level
+        if (count <= 0 && current_level < 0) {
+            continue;
         }
+
+        zmk_battery_history_BatterySourceData *source_data = &result.sources[result.sources_count];
+        source_data->source = (uint32_t)src;
+
+        // Set source name
+        if (src == 0) {
+            snprintf(source_data->source_name, sizeof(source_data->source_name), "Central");
+        } else {
+            snprintf(source_data->source_name, sizeof(source_data->source_name), "Peripheral %d",
+                     src);
+        }
+
+        // Set current battery level
+        if (current_level >= 0) {
+            source_data->current_battery_level = (uint32_t)current_level;
+        }
+
+        // Get history entries for this source
+        source_data->entries_count = 0;
+        for (int i = 0; i < count && i < CONFIG_ZMK_BATTERY_HISTORY_MAX_ENTRIES; i++) {
+            struct zmk_battery_history_entry entry;
+            if (zmk_battery_history_get_entry_for_source(src, i, &entry) == 0) {
+                source_data->entries[source_data->entries_count].timestamp = entry.timestamp;
+                source_data->entries[source_data->entries_count].battery_level =
+                    entry.battery_level;
+                source_data->entries_count++;
+            }
+        }
+
+        result.sources_count++;
     }
 
     // Include metadata if requested
@@ -122,10 +153,11 @@ static int handle_get_history_request(const zmk_battery_history_GetBatteryHistor
         snprintf(result.metadata.device_name, sizeof(result.metadata.device_name), "ZMK Keyboard");
         result.metadata.recording_interval_minutes = (uint32_t)zmk_battery_history_get_interval();
         result.metadata.max_entries = (uint32_t)zmk_battery_history_get_max_entries();
+        result.metadata.is_split = source_count > 1;
+        result.metadata.peripheral_count = source_count > 1 ? (uint32_t)(source_count - 1) : 0;
     }
 
-    LOG_INF("Returning battery history: %d entries, current level: %d%%", result.entries_count,
-            result.current_battery_level);
+    LOG_INF("Returning battery history: %d sources", result.sources_count);
 
     resp->which_response_type = zmk_battery_history_Response_get_history_tag;
     resp->response_type.get_history = result;

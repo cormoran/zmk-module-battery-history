@@ -131,6 +131,8 @@ The module exposes these RPC endpoints via the `zmk__battery_history` subsystem:
 - `GetBatteryHistory`: Retrieve all stored battery history entries
 - `ClearBatteryHistory`: Clear stored history (for future backend sync support)
 
+**Split Keyboard Support**: The protocol now supports split keyboards with separate battery tracking for central and peripheral sides. The response includes a `sources` array with battery data for each source.
+
 ### C API
 
 ```c
@@ -147,7 +149,31 @@ int zmk_battery_history_get_current_level(void);
 
 // Clear all history
 int zmk_battery_history_clear(void);
+
+// Split keyboard support (available when CONFIG_ZMK_SPLIT is enabled)
+// Get number of sources (1 for non-split, 1+N for split with N peripherals)
+int zmk_battery_history_get_source_count(void);
+
+// Get battery data for a specific source (0 = central, 1+ = peripheral index)
+int zmk_battery_history_get_count_for_source(uint8_t source);
+int zmk_battery_history_get_entry_for_source(uint8_t source, int index,
+                                              struct zmk_battery_history_entry *entry);
+int zmk_battery_history_get_current_level_for_source(uint8_t source);
 ```
+
+## Split Keyboard Support
+
+This module now supports split keyboards with separate battery tracking for central and peripheral sides:
+
+- **Automatic Detection**: The module automatically detects split keyboard configurations
+- **Per-Source Tracking**: Battery history is tracked separately for each source (central + peripherals)
+- **Web UI**: The web interface displays battery data for each source with separate charts and statistics
+- **Backward Compatible**: Non-split keyboards continue to work without any changes
+
+When using a split keyboard with `CONFIG_ZMK_SPLIT` enabled:
+1. The central side tracks its own battery history
+2. Peripheral battery levels are queried via BLE when available (`CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING`)
+3. The web UI displays separate sections for each side with individual charts and statistics
 
 ## License
 

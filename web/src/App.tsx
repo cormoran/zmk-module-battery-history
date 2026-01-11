@@ -136,11 +136,16 @@ export function RPCTestSection() {
         console.log("Decoded response:", resp);
 
         if (resp.getHistory) {
-          const entries = resp.getHistory.entries || [];
+          const sources = resp.getHistory.sources || [];
           const metadata = resp.getHistory.metadata;
+          const totalEntries = sources.reduce((sum, s) => sum + s.entries.length, 0);
+          const centralSource = sources.find(s => s.source === 0);
+          const batteryLevel = centralSource?.currentBatteryLevel ?? 0;
+          
           setResponse(
-            `Battery Level: ${resp.getHistory.currentBatteryLevel}%\n` +
-            `Entries: ${entries.length}\n` +
+            `Battery Level: ${batteryLevel}%\n` +
+            `Sources: ${sources.length}\n` +
+            `Total Entries: ${totalEntries}\n` +
             (metadata ? `Device: ${metadata.deviceName}\nInterval: ${metadata.recordingIntervalMinutes}min` : "")
           );
         } else if (resp.error) {

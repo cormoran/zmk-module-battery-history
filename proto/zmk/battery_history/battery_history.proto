@@ -24,16 +24,30 @@ message DeviceMetadata {
     uint32 recording_interval_minutes = 2;
     // Maximum number of entries that can be stored
     uint32 max_entries = 3;
+    // Is this a split keyboard?
+    bool is_split = 4;
+    // Number of peripherals (0 if not split)
+    uint32 peripheral_count = 5;
+}
+
+// Battery data for a single source (central or peripheral)
+message BatterySourceData {
+    // Source identifier: 0 = central, 1+ = peripheral index
+    uint32 source = 1;
+    // Source name (e.g., "Central", "Left", "Right")
+    string source_name = 2;
+    // Array of battery history entries, ordered from oldest to newest
+    repeated BatteryHistoryEntry entries = 3;
+    // Current battery level percentage
+    uint32 current_battery_level = 4;
 }
 
 // Response containing battery history data
 message GetBatteryHistoryResponse {
-    // Array of battery history entries, ordered from oldest to newest
-    repeated BatteryHistoryEntry entries = 1;
+    // Battery data for each source (central and peripherals)
+    repeated BatterySourceData sources = 1;
     // Optional device metadata
     DeviceMetadata metadata = 2;
-    // Current battery level percentage
-    uint32 current_battery_level = 3;
 }
 
 // Request to clear battery history from device storage

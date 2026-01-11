@@ -14,6 +14,7 @@ import {
   Request,
   Response,
   GetBatteryHistoryResponse,
+  BatteryHistoryEntry,
 } from "../proto/zmk/battery_history/battery_history";
 import { BatteryHistoryChart } from "./BatteryHistoryChart";
 import { BatteryIndicator } from "./BatteryIndicator";
@@ -172,10 +173,15 @@ export function BatteryHistorySection() {
 
   const { data, isLoading, error, lastFetched } = state;
 
+  // Use metadata to determine if this is a split keyboard
+  const isSplit = data?.metadata?.isSplit ?? false;
+  // Always use sources array
+  const sources = data?.sources ?? [];
+
   return (
     <section className="card battery-section">
       <div className="section-header">
-        <h2>🔋 Battery History</h2>
+        <h2>🔋 Battery History {isSplit ? "(Split Keyboard)" : ""}</h2>
         <div className="section-actions">
           <button
             className="btn btn-icon"
@@ -202,47 +208,64 @@ export function BatteryHistorySection() {
         </div>
       )}
 
-      {/* Current Battery Status */}
-      <div className="battery-status-section">
-        <BatteryIndicator
-          level={data?.currentBatteryLevel ?? 0}
-          isLoading={isLoading && !data}
-        />
-
-        {data?.metadata && (
-          <div className="device-metadata">
-            <div className="metadata-item">
-              <span className="metadata-label">Recording Interval</span>
-              <span className="metadata-value">
-                {data.metadata.recordingIntervalMinutes} min
-              </span>
-            </div>
-            <div className="metadata-item">
-              <span className="metadata-label">Max Entries</span>
-              <span className="metadata-value">{data.metadata.maxEntries}</span>
-            </div>
-            <div className="metadata-item">
-              <span className="metadata-label">Current Entries</span>
-              <span className="metadata-value">{data.entries.length}</span>
-            </div>
+      {/* Global metadata */}
+      {data?.metadata && (
+        <div className="device-metadata">
+          <div className="metadata-item">
+            <span className="metadata-label">Recording Interval</span>
+            <span className="metadata-value">
+              {data.metadata.recordingIntervalMinutes} min
+            </span>
           </div>
-        )}
-      </div>
-
-      {/* Battery History Chart */}
-      <div className="chart-section">
-        <h3>Battery Level Over Time</h3>
-        <BatteryHistoryChart
-          entries={data?.entries ?? []}
-        />
-      </div>
-
-      {/* Statistics */}
-      {data && data.entries.length > 0 && (
-        <div className="stats-section">
-          <BatteryStats entries={data.entries} />
+          <div className="metadata-item">
+            <span className="metadata-label">Max Entries</span>
+            <span className="metadata-value">{data.metadata.maxEntries}</span>
+          </div>
+          {isSplit && (
+            <div className="metadata-item">
+              <span className="metadata-label">Peripherals</span>
+              <span className="metadata-value">{data.metadata.peripheralCount}</span>
+            </div>
+          )}
         </div>
       )}
+
+      {/* Display each source (central and peripherals if split) */}
+      {sources.map((source) => (
+        <div key={source.source} className={isSplit ? "source-section" : ""}>
+          {isSplit && <h3>📱 {source.sourceName}</h3>}
+          
+          {/* Current Battery Status */}
+          <div className="battery-status-section">
+            <BatteryIndicator
+              level={source.currentBatteryLevel ?? 0}
+              isLoading={isLoading && !data}
+            />
+            
+            <div className="device-metadata">
+              <div className="metadata-item">
+                <span className="metadata-label">Current Entries</span>
+                <span className="metadata-value">{source.entries.length}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Battery History Chart */}
+          {source.entries.length > 0 && (
+            <>
+              <div className="chart-section">
+                <h3>Battery Level Over Time</h3>
+                <BatteryHistoryChart entries={source.entries} />
+              </div>
+
+              {/* Statistics */}
+              <div className="stats-section">
+                <BatteryStats entries={source.entries} />
+              </div>
+            </>
+          )}
+        </div>
+      ))}
 
       {/* Last updated */}
       {lastFetched && (
@@ -260,15 +283,15 @@ export function BatteryHistorySection() {
 function BatteryStats({
   entries,
 }: {
-  entries: GetBatteryHistoryResponse["entries"];
+  entries: BatteryHistoryEntry[];
 }) {
   if (entries.length < 2) return null;
 
   // Calculate statistics
-  const levels = entries.map((e) => e.batteryLevel);
+  const levels = entries.map((e: BatteryHistoryEntry) => e.batteryLevel);
   const minLevel = Math.min(...levels);
   const maxLevel = Math.max(...levels);
-  const avgLevel = Math.round(levels.reduce((a, b) => a + b, 0) / levels.length);
+  const avgLevel = Math.round(levels.reduce((a: number, b: number) => a + b, 0) / levels.length);
 
   // Estimate drain rate (percentage per hour)
   const firstEntry = entries[0];
