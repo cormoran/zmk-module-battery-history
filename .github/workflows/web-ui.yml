@@ -32,6 +32,8 @@ jobs:
         run: npm run generate
       - name: Run lint
         run: npm run lint
+      - name: Run tests
+        run: npm test
       - name: Build for Cloudflare Workers Preview
         if: ${{ github.event_name != 'workflow_dispatch' }}
         run: npm run build
