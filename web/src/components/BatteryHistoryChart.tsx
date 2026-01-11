@@ -72,13 +72,37 @@ export function BatteryHistoryChart({
   // Chart dimensions
   const chartWidth = 600;
   const chartHeight = 250;
-  const padding = useMemo(() => ({ top: 20, right: 30, bottom: 40, left: 50 }), []);
+  const padding = useMemo(
+    () => ({ top: 20, right: 30, bottom: 40, left: 50 }),
+    []
+  );
   const innerWidth = chartWidth - padding.left - padding.right;
   const innerHeight = chartHeight - padding.top - padding.bottom;
 
+  const mappedEntries = useMemo(() => {
+    const newEntries = new Array<BatteryHistoryEntry>(entries.length);
+    entries.reduce((timestampOffset, entry, i) => {
+      // Ensure timestamps are strictly increasing by at least 60s
+      // Since timestamp resets at device reboot, we adjust accordingly
+
+      const timestamp = (() => {
+        if (i > 0 && entry.timestamp < entries[i - 1].timestamp) {
+          timestampOffset = entries[i - 1].timestamp + 60;
+        }
+        return entry.timestamp + timestampOffset;
+      })();
+      newEntries[i] = {
+        ...entry,
+        timestamp: timestamp,
+      };
+      return timestampOffset;
+    }, 0);
+    return newEntries;
+  }, [entries]);
+
   // Calculate chart data
   const chartData = useMemo(() => {
-    if (entries.length === 0) {
+    if (mappedEntries.length === 0) {
       return {
         points: [],
         pathData: "",
@@ -88,8 +112,8 @@ export function BatteryHistoryChart({
       };
     }
 
-    const maxTimestamp = Math.max(...entries.map((e) => e.timestamp));
-    const minTimestamp = Math.min(...entries.map((e) => e.timestamp));
+    const maxTimestamp = Math.max(...mappedEntries.map((e) => e.timestamp));
+    const minTimestamp = Math.min(...mappedEntries.map((e) => e.timestamp));
     const timeRange = maxTimestamp - minTimestamp || 1;
 
     // Scale functions
@@ -99,7 +123,7 @@ export function BatteryHistoryChart({
       padding.top + ((100 - level) / 100) * innerHeight;
 
     // Generate points
-    const points = entries.map((entry, index) => ({
+    const points = mappedEntries.map((entry, index) => ({
       x: scaleX(entry.timestamp),
       y: scaleY(entry.batteryLevel),
       entry,
@@ -112,17 +136,22 @@ export function BatteryHistoryChart({
       .join(" ");
 
     // Generate SVG path for area fill
-    const areaData = `${pathData} L ${points[points.length - 1].x} ${padding.top + innerHeight} L ${points[0].x} ${padding.top + innerHeight} Z`;
+    const areaData = `${pathData} L ${points[points.length - 1].x} ${
+      padding.top + innerHeight
+    } L ${points[0].x} ${padding.top + innerHeight} Z`;
 
     // X-axis labels (time)
     const xLabels: { x: number; label: string }[] = [];
-    const labelCount = Math.min(6, entries.length);
-    if (entries.length > 0) {
+    const labelCount = Math.min(6, mappedEntries.length);
+    if (mappedEntries.length > 0) {
       for (let i = 0; i < labelCount; i++) {
-        const idx = Math.floor((i * (entries.length - 1)) / (labelCount - 1));
-        const entry = entries[idx];
+        const idx = Math.floor(
+          (i * (mappedEntries.length - 1)) / (labelCount - 1)
+        );
+        const entry = mappedEntries[idx];
         if (entry) {
-          const now = startTimestamp || entries[entries.length - 1].timestamp;
+          const now =
+            startTimestamp || mappedEntries[mappedEntries.length - 1].timestamp;
           const ago = now - entry.timestamp;
           xLabels.push({
             x: scaleX(entry.timestamp),
@@ -139,9 +168,9 @@ export function BatteryHistoryChart({
       xLabels,
       yLabels: [0, 25, 50, 75, 100],
     };
-  }, [entries, innerWidth, innerHeight, padding, startTimestamp]);
+  }, [mappedEntries, innerWidth, innerHeight, padding, startTimestamp]);
 
-  if (entries.length === 0) {
+  if (mappedEntries.length === 0) {
     return (
       <div className="chart-empty">
         <div className="chart-empty-icon">📊</div>
@@ -190,8 +219,7 @@ export function BatteryHistoryChart({
 
         {/* Grid lines */}
         {chartData.yLabels.map((level) => {
-          const y =
-            padding.top + ((100 - level) / 100) * innerHeight;
+          const y = padding.top + ((100 - level) / 100) * innerHeight;
           return (
             <g key={level}>
               <line
@@ -227,10 +255,18 @@ export function BatteryHistoryChart({
         ))}
 
         {/* Area fill */}
-        <path d={chartData.areaData} className="chart-area" fill="url(#areaGradient)" />
+        <path
+          d={chartData.areaData}
+          className="chart-area"
+          fill="url(#areaGradient)"
+        />
 
         {/* Line */}
-        <path d={chartData.pathData} className="chart-line" filter="url(#glow)" />
+        <path
+          d={chartData.pathData}
+          className="chart-line"
+          filter="url(#glow)"
+        />
 
         {/* Data points */}
         {chartData.points.map((point) => (
@@ -274,13 +310,16 @@ export function BatteryHistoryChart({
         >
           <div className="tooltip-level">
             <span
-              className={`tooltip-indicator ${getBatteryColorClass(tooltip.entry.batteryLevel)}`}
+              className={`tooltip-indicator ${getBatteryColorClass(
+                tooltip.entry.batteryLevel
+              )}`}
             ></span>
             {tooltip.entry.batteryLevel}%
           </div>
           <div className="tooltip-time">
             {formatTimestamp(
-              (startTimestamp || entries[entries.length - 1].timestamp) -
+              (startTimestamp ||
+                mappedEntries[mappedEntries.length - 1].timestamp) -
                 tooltip.entry.timestamp
             )}
           </div>
