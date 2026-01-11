@@ -19,7 +19,7 @@ import {
 import { Request, Response } from "./proto/zmk/battery_history/battery_history";
 import { BatteryHistorySection, BATTERY_HISTORY_SUBSYSTEM } from "./components/BatteryHistorySection";
 
-// Custom subsystem identifier for template - must match firmware registration
+// Custom subsystem identifier for battery history - must match firmware registration
 export const SUBSYSTEM_IDENTIFIER = BATTERY_HISTORY_SUBSYSTEM;
 
 function App() {
