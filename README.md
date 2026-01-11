@@ -216,6 +216,10 @@ For previewing web UI changes in pull requests:
 
 By running `Actions > Sync Changes in Template > Run workflow`, pull request is created to your repository to reflect changes in template repository.
 
+If the template contains changes in `.github/workflows/*`, registering your github personal access token as `GH_TOKEN` to repository secret is required.
+The fine-grained token requires write to contents, pull-requests and workflows.
+Please see detail in [actions-template-sync](https://github.com/AndreasAugustin/actions-template-sync).
+
 ## More Info
 
 For more info on modules, you can read through through the
