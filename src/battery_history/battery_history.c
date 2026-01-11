@@ -61,28 +61,17 @@ struct battery_source_history {
 
 static struct battery_source_history source_history[SOURCE_COUNT];
 
-// Legacy single buffer support - points to central (source 0)
-static struct zmk_battery_history_entry *history_buffer = source_history[0].buffer;
-static int *history_head_ptr = &source_history[0].head;
-static int *history_count_ptr = &source_history[0].count;
-static int *unsaved_count_ptr = &source_history[0].unsaved_count;
-static int *first_unsaved_idx_ptr = &source_history[0].first_unsaved_idx;
-static uint8_t *last_saved_battery_level_ptr = &source_history[0].last_saved_level;
-static uint16_t *last_saved_timestamp_ptr = &source_history[0].last_saved_timestamp;
-static uint8_t *current_battery_level_ptr = &source_history[0].current_level;
-static bool *first_record_after_boot_ptr = &source_history[0].first_record_after_boot;
-static bool *head_changed_since_save_ptr = &source_history[0].head_changed_since_save;
-
-// Use macros for backward compatibility with existing code
-#define history_head (*history_head_ptr)
-#define history_count (*history_count_ptr)
-#define unsaved_count (*unsaved_count_ptr)
-#define first_unsaved_idx (*first_unsaved_idx_ptr)
-#define last_saved_battery_level (*last_saved_battery_level_ptr)
-#define last_saved_timestamp (*last_saved_timestamp_ptr)
-#define current_battery_level (*current_battery_level_ptr)
-#define first_record_after_boot (*first_record_after_boot_ptr)
-#define head_changed_since_save (*head_changed_since_save_ptr)
+// Legacy compatibility - macros will reference central (source 0) data
+#define history_buffer (source_history[0].buffer)
+#define history_head (source_history[0].head)
+#define history_count (source_history[0].count)
+#define unsaved_count (source_history[0].unsaved_count)
+#define first_unsaved_idx (source_history[0].first_unsaved_idx)
+#define last_saved_battery_level (source_history[0].last_saved_level)
+#define last_saved_timestamp (source_history[0].last_saved_timestamp)
+#define current_battery_level (source_history[0].current_level)
+#define first_record_after_boot (source_history[0].first_record_after_boot)
+#define head_changed_since_save (source_history[0].head_changed_since_save)
 
 // Work item for periodic recording
 static void battery_history_work_handler(struct k_work *work);
