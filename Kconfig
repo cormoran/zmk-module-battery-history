@@ -35,6 +35,15 @@ config ZMK_BATTERY_HISTORY_INTERVAL_MINUTES
       records when battery level hasn't changed significantly.
       Minimum is 1 minute, maximum is 1440 minutes (24 hours).
 
+config ZMK_BATTERY_HISTORY_SAVE_INTERVAL_MINUTES
+    int "Battery history forced save interval in minutes"
+    default 30
+    range 1 1440
+    help
+      Force saving battery history to persistent storage at least this often,
+      regardless of level changes. Default is 30 minutes. This ensures data
+      is periodically saved even if battery level remains stable.
+
 config ZMK_BATTERY_HISTORY_SAVE_LEVEL_THRESHOLD
     int "Battery level change threshold for saving (percentage)"
     default 2
@@ -44,5 +53,26 @@ config ZMK_BATTERY_HISTORY_SAVE_LEVEL_THRESHOLD
       since the last save. Default is 2%, meaning save triggers when battery
       drops 2% from the last saved level. This balances data freshness with
       flash wear reduction.
+
+config ZMK_BATTERY_HISTORY_FORCE_SAVE_ON_SLEEP
+    bool "Force save battery history on sleep"
+    default y
+    help
+      Force saving any unsaved battery history entries when the device enters sleep mode.
+      This ensures data is not lost during long sleep periods.
+
+config ZMK_BATTERY_IGNORE_ZERO_LEVEL
+    bool "Ignore zero percent battery level readings"
+    default y
+    help
+      Ignore battery level readings of 0% when recording history.
+      This prevents storing potentially uninitialized or erroneous values.
+
+config ZMK_BATTERY_SKIP_IF_USB_POWERED
+    bool "Skip battery history recording when USB powered"
+    default y
+    help
+      Do not record battery history entries when the device is powered via USB.
+      This avoids logging irrelevant battery levels during charging or USB power.
 
 endif

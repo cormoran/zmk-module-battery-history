@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 The ZMK Contributors
+ * Copyright (c) Copyright (c) 2026 cormoran
  *
  * SPDX-License-Identifier: MIT
  */
@@ -13,8 +13,8 @@
  * @brief A single battery history entry
  */
 struct __attribute__((packed)) zmk_battery_history_entry {
-    uint16_t timestamp;      // Seconds since boot (resets on each restart)
-    uint8_t battery_level;   // Battery percentage (0-100)
+    uint16_t timestamp;    // Seconds since boot (resets on each restart)
+    uint8_t battery_level; // Battery percentage (0-100)
 };
 
 /**

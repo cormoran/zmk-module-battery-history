@@ -59,21 +59,15 @@ CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC=y
 
 ## Configuration Options
 
-| Config                                        | Default | Description                                       |
-| --------------------------------------------- | ------- | ------------------------------------------------- |
-| `CONFIG_ZMK_BATTERY_HISTORY_MAX_ENTRIES`      | 192     | Maximum stored entries (~8 days at 1hr intervals) |
-| `CONFIG_ZMK_BATTERY_HISTORY_INTERVAL_MINUTES` | 60      | Recording interval in minutes                     |
-| `CONFIG_ZMK_BATTERY_HISTORY_SAVE_THRESHOLD`   | 4       | Entries before saving to flash (reduces wear)     |
-
-### Flash Wear Considerations
-
-For devices like the XIAO nRF52840, frequent flash writes can reduce storage lifespan. The default settings balance data accuracy with flash longevity:
-
-- Records every 60 minutes
-- Saves to flash every 4 entries (4 hours)
-- Stores up to 192 entries (~8 days of history)
-
-Adjust `CONFIG_ZMK_BATTERY_HISTORY_SAVE_THRESHOLD` higher if you want less frequent saves.
+| Config                                             | Default | Description                                                        |
+| -------------------------------------------------- | ------- | ------------------------------------------------------------------ |
+| `CONFIG_ZMK_BATTERY_HISTORY_MAX_ENTRIES`           | 192     | Maximum stored entries (~8 days at 1hr intervals)                  |
+| `CONFIG_ZMK_BATTERY_HISTORY_INTERVAL_MINUTES`      | 5       | Recording interval in minutes (to memory)                          |
+| `CONFIG_ZMK_BATTERY_HISTORY_SAVE_INTERVAL_MINUTES` | 5       | Battery history forced save interval in minutes (to flush storage) |
+| `CONFIG_ZMK_BATTERY_HISTORY_SAVE_LEVEL_THRESHOLD`  | 2       | Battery level change threshold for saving (percentage)             |
+| `CONFIG_ZMK_BATTERY_HISTORY_FORCE_SAVE_ON_SLEEP`   | 2       | Force save battery history on sleep (percentage)                   |
+| `CONFIG_ZMK_BATTERY_IGNORE_ZERO_LEVEL`             | y       | Ignore zero percent battery level readings                         |
+| `CONFIG_ZMK_BATTERY_SKIP_IF_USB_POWERED`           | y       | Skip battery history recording when USB powered                    |
 
 ## Web UI
 
