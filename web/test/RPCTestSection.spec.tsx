@@ -66,8 +66,8 @@ describe("RPCTestSection Component", () => {
         </ZMKAppProvider>
       );
 
-      // Check for warning message
-      expect(screen.getByText(/Subsystem "zmk__template" not found/i)).toBeInTheDocument();
+      // Check for warning message - update to match battery_history subsystem
+      expect(screen.getByText(/Subsystem "zmk__battery_history" not found/i)).toBeInTheDocument();
       expect(screen.getByText(/Make sure your firmware includes the template module/i)).toBeInTheDocument();
     });
   });

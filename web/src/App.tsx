@@ -16,7 +16,7 @@ import {
   ZMKCustomSubsystem,
   ZMKAppContext,
 } from "@cormoran/zmk-studio-react-hook";
-import { Request, Response } from "./proto/zmk/template/custom";
+import { Request, Response } from "./proto/zmk/battery_history/battery_history";
 import { BatteryHistorySection, BATTERY_HISTORY_SUBSYSTEM } from "./components/BatteryHistorySection";
 
 // Custom subsystem identifier for template - must match firmware registration

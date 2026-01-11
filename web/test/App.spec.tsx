@@ -26,16 +26,16 @@ describe("App Component", () => {
     it("should render the application header", () => {
       render(<App />);
       
-      // Check for the main title
-      expect(screen.getByText(/Battery History/i)).toBeInTheDocument();
+      // Check for the main title - use getByRole to find the specific h1
+      expect(screen.getByRole('heading', { name: /Battery History/i })).toBeInTheDocument();
       expect(screen.getByText(/Monitor your keyboard/i)).toBeInTheDocument();
     });
 
     it("should render connection button when disconnected", () => {
       render(<App />);
 
-      // Check for connection button in disconnected state
-      expect(screen.getByText(/Connect via USB/i)).toBeInTheDocument();
+      // Check for connection button in disconnected state - use getByRole
+      expect(screen.getByRole('button', { name: /Connect via USB/i })).toBeInTheDocument();
     });
 
     it("should render footer", () => {
@@ -67,12 +67,12 @@ describe("App Component", () => {
       // Render the app
       render(<App />);
 
-      // Verify initial disconnected state
-      expect(screen.getByText(/Connect via USB/i)).toBeInTheDocument();
+      // Verify initial disconnected state - use getByRole
+      expect(screen.getByRole('button', { name: /Connect via USB/i })).toBeInTheDocument();
 
       // Click the connect button
       const user = userEvent.setup();
-      const connectButton = screen.getByText(/Connect via USB/i);
+      const connectButton = screen.getByRole('button', { name: /Connect via USB/i });
       await user.click(connectButton);
 
       // Wait for connection to complete and verify connected state
