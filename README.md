@@ -212,6 +212,10 @@ For previewing web UI changes in pull requests:
 
 3. Create a pull request with web UI changes - the preview deployment will trigger automatically and wait for approval
 
+## Sync changes in template
+
+By running `Actions > Sync Changes in Template > Run workflow`, pull request is created to your repository to reflect changes in template repository.
+
 ## More Info
 
 For more info on modules, you can read through through the
