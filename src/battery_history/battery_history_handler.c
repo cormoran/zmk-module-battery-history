@@ -18,6 +18,10 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
+// Maximum number of sources (central + peripherals) to report in RPC response
+// This limit is based on protobuf array size constraints
+#define MAX_SOURCES_IN_RESPONSE 8
+
 /**
  * Metadata for the battery history custom subsystem.
  * - ui_urls: URLs where the custom UI can be loaded from
@@ -102,7 +106,7 @@ static int handle_get_history_request(const zmk_battery_history_GetBatteryHistor
 
     // Populate per-source data
     result.sources_count = 0;
-    for (int src = 0; src < source_count && src < 8; src++) {
+    for (int src = 0; src < source_count && src < MAX_SOURCES_IN_RESPONSE; src++) {
         // Get current battery level for this source
         int current_level = zmk_battery_history_get_current_level_for_source(src);
         int count = zmk_battery_history_get_count_for_source(src);
