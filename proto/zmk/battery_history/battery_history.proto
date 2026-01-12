@@ -8,6 +8,14 @@ message GetBatteryHistoryRequest {
     bool include_metadata = 1;
 }
 
+// Request to get battery history from a specific peripheral
+// When sent to central, it triggers the behavior on the peripheral
+// which causes the peripheral to send battery history events back
+message RequestPeripheralBatteryHistoryRequest {
+    // Peripheral source ID (0-based index)
+    uint32 peripheral_id = 1;
+}
+
 // A single battery history entry
 message BatteryHistoryEntry {
     // Unix timestamp in seconds when this entry was recorded
@@ -52,6 +60,7 @@ message Request {
     oneof request_type {
         GetBatteryHistoryRequest get_history = 1;
         ClearBatteryHistoryRequest clear_history = 2;
+        RequestPeripheralBatteryHistoryRequest request_peripheral_history = 3;
     }
 }
 
@@ -66,5 +75,27 @@ message Response {
         ErrorResponse error = 1;
         GetBatteryHistoryResponse get_history = 2;
         ClearBatteryHistoryResponse clear_history = 3;
+    }
+}
+
+// Notification sent when battery history entry is received
+// Used for streaming battery history from peripherals
+message BatteryHistoryNotification {
+    // Source ID: 0 for central, 1+ for peripherals
+    uint32 source_id = 1;
+    // Battery history entry
+    BatteryHistoryEntry entry = 2;
+    // True if this is the last entry in the batch
+    bool is_last = 3;
+    // Total number of entries being sent (only set on first entry)
+    uint32 total_entries = 4;
+    // Index of this entry in the batch (0-based)
+    uint32 entry_index = 5;
+}
+
+// Notification wrapper - sent as custom notification payload
+message Notification {
+    oneof notification_type {
+        BatteryHistoryNotification battery_history = 1;
     }
 }

@@ -60,3 +60,34 @@ int zmk_battery_history_get_max_entries(void);
  * @return 0 on success, negative error code on failure
  */
 int zmk_battery_history_save(void);
+
+/**
+ * @brief Trigger sending battery history entries as events
+ *
+ * This function is called on peripheral devices when they receive
+ * a request to send battery history. It triggers events for each
+ * entry in the local buffer.
+ *
+ * @return 0 on success, negative error code on failure
+ */
+int zmk_battery_history_trigger_send(void);
+
+#if IS_ENABLED(CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC)
+/**
+ * @brief Send a battery history notification for a single entry
+ *
+ * This function sends an RPC notification with a battery history entry.
+ * Used for streaming battery history data to the host UI.
+ *
+ * @param source_id Source ID (0 for central, 1+ for peripherals)
+ * @param entry Battery history entry to send
+ * @param entry_index Index of this entry in the batch (0-based)
+ * @param total_entries Total number of entries in the batch
+ * @param is_last True if this is the last entry in the batch
+ * @return 0 on success, negative error code on failure
+ */
+int zmk_battery_history_send_notification(uint8_t source_id,
+                                          const struct zmk_battery_history_entry *entry,
+                                          uint8_t entry_index, uint8_t total_entries,
+                                          bool is_last);
+#endif

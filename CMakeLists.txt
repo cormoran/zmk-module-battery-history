@@ -1,10 +1,19 @@
-# Template Feature CMakeLists.txt
+# Battery History Feature CMakeLists.txt
 
 # Include directories
 zephyr_include_directories(include)
+
+# DTS bindings
+zephyr_include_directories(dts/bindings)
+
 # Battery History Feature
 if(CONFIG_ZMK_BATTERY_HISTORY)
     target_sources(app PRIVATE src/battery_history/battery_history.c)
+
+    if(CONFIG_ZMK_BATTERY_HISTORY_SPLIT)
+        target_sources(app PRIVATE src/behaviors/behavior_battery_history_request.c)
+        target_sources(app PRIVATE src/battery_history/battery_history_split.c)
+    endif()
 
     if(CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC)
         target_sources(app PRIVATE src/battery_history/battery_history_handler.c)

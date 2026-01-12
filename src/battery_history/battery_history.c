@@ -14,6 +14,7 @@
 #include <zmk/battery.h>
 #include <zmk/usb.h>
 #include <zmk/battery_history/battery_history.h>
+#include <zmk/battery_history/events/battery_history_entry_event.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/activity_state_changed.h>
 #include <zmk/events/battery_state_changed.h>
@@ -477,3 +478,46 @@ int zmk_battery_history_get_interval(void) { return CONFIG_ZMK_BATTERY_HISTORY_I
 int zmk_battery_history_get_max_entries(void) { return MAX_ENTRIES; }
 
 int zmk_battery_history_save(void) { return save_history(); }
+
+ZMK_EVENT_IMPL(zmk_battery_history_entry_event);
+
+int zmk_battery_history_trigger_send(void) {
+    int count = history_count;
+    LOG_INF("Triggering battery history send: %d entries", count);
+
+    for (int i = 0; i < count; i++) {
+        struct zmk_battery_history_entry entry;
+        if (zmk_battery_history_get_entry(i, &entry) != 0) {
+            LOG_ERR("Failed to get entry %d", i);
+            continue;
+        }
+
+        struct zmk_battery_history_entry_event ev = {
+            .source = 0, // Will be set by transport layer for peripherals
+            .entry = entry,
+            .entry_index = (uint8_t)i,
+            .total_entries = (uint8_t)count,
+            .is_last = (i == count - 1),
+        };
+
+        int rc = raise_zmk_battery_history_entry_event(ev);
+        if (rc != 0) {
+            LOG_ERR("Failed to raise battery history entry event: %d", rc);
+            return rc;
+        }
+    }
+
+    // If no entries, send a single "last" event with empty data to signal completion
+    if (count == 0) {
+        struct zmk_battery_history_entry_event ev = {
+            .source = 0,
+            .entry = {.timestamp = 0, .battery_level = 0},
+            .entry_index = 0,
+            .total_entries = 0,
+            .is_last = true,
+        };
+        raise_zmk_battery_history_entry_event(ev);
+    }
+
+    return 0;
+}

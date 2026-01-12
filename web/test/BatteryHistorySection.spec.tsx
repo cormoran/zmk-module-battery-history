@@ -42,8 +42,9 @@ describe("BatteryHistorySection Component", () => {
         </ZMKAppProvider>
       );
 
-      // Check for action buttons
-      expect(screen.getByTitle(/Refresh data/i)).toBeInTheDocument();
+      // Check for action buttons - updated titles for split keyboard support
+      expect(screen.getByTitle(/Refresh central data/i)).toBeInTheDocument();
+      expect(screen.getByTitle(/Request peripheral 1 data/i)).toBeInTheDocument();
       expect(screen.getByTitle(/Clear history/i)).toBeInTheDocument();
     });
   });

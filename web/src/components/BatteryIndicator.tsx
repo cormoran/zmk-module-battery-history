@@ -10,6 +10,7 @@ import "./BatteryIndicator.css";
 interface BatteryIndicatorProps {
   level: number;
   isLoading?: boolean;
+  label?: string;
 }
 
 /**
@@ -32,12 +33,13 @@ function getStatusText(level: number): string {
   return "Critical";
 }
 
-export function BatteryIndicator({ level, isLoading }: BatteryIndicatorProps) {
+export function BatteryIndicator({ level, isLoading, label }: BatteryIndicatorProps) {
   const statusClass = getStatusClass(level);
   const statusText = getStatusText(level);
 
   return (
     <div className={`battery-indicator ${statusClass} ${isLoading ? "loading" : ""}`}>
+      {label && <div className="battery-label">{label}</div>}
       <div className="battery-visual">
         <div className="battery-body">
           <div

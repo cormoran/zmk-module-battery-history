@@ -62,6 +62,72 @@
   to { transform: rotate(360deg); }
 }
 
+/* Source Selector */
+.source-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.selector-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.source-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-small {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+/* Streaming Progress */
+.streaming-progress {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: #dbeafe;
+  border-radius: 8px;
+}
+
+.progress-label {
+  font-size: 0.875rem;
+  color: #1e40af;
+  flex-shrink: 0;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #bfdbfe;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: #1e40af;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
 /* Battery Status Section */
 .battery-status-section {
   display: flex;
@@ -206,6 +272,31 @@
     border-color: #7f1d1d;
   }
 
+  .source-selector {
+    background: #2d2d2d;
+  }
+
+  .selector-label {
+    color: #94a3b8;
+  }
+
+  .streaming-progress {
+    background: #1e3a5f;
+  }
+
+  .progress-label,
+  .progress-text {
+    color: #bfdbfe;
+  }
+
+  .progress-bar {
+    background: #1e40af;
+  }
+
+  .progress-fill {
+    background: #60a5fa;
+  }
+
   .device-metadata {
     background: #2d2d2d;
   }
@@ -266,5 +357,15 @@
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .source-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .source-buttons {
+    flex-wrap: wrap;
   }
 }
