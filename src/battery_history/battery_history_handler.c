@@ -7,6 +7,10 @@
  *
  * This file implements the RPC subsystem for retrieving battery history
  * data from ZMK devices via ZMK Studio.
+ *
+ * For split keyboard support, this handler uses RPC notifications to stream
+ * battery history entries. This allows the UI to receive data progressively
+ * as it's collected from peripherals.
  */
 
 #include <pb_decode.h>
@@ -14,6 +18,11 @@
 #include <zmk/studio/custom.h>
 #include <zmk/battery_history/battery_history.pb.h>
 #include <zmk/battery_history/battery_history.h>
+#include <zmk/battery_history/events/battery_history_entry_event.h>
+
+#if IS_ENABLED(CONFIG_ZMK_BATTERY_HISTORY_SPLIT)
+#include <zmk/behavior.h>
+#endif
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -29,6 +38,9 @@ static struct zmk_rpc_custom_subsystem_meta battery_history_meta = {
     .security = ZMK_STUDIO_RPC_HANDLER_UNSECURED,
 };
 
+// Forward declaration of subsystem index getter
+static int get_subsystem_index(void);
+
 /**
  * Register the custom RPC subsystem.
  * Format: <namespace>__<feature> (double underscore)
@@ -42,6 +54,9 @@ static int handle_get_history_request(const zmk_battery_history_GetBatteryHistor
                                       zmk_battery_history_Response *resp);
 static int handle_clear_history_request(const zmk_battery_history_ClearBatteryHistoryRequest *req,
                                         zmk_battery_history_Response *resp);
+static int handle_request_peripheral_history(
+    const zmk_battery_history_RequestPeripheralBatteryHistoryRequest *req,
+    zmk_battery_history_Response *resp);
 
 /**
  * Main request handler for the battery history RPC subsystem.
@@ -72,6 +87,9 @@ static bool battery_history_rpc_handle_request(const zmk_custom_CallRequest *raw
         break;
     case zmk_battery_history_Request_clear_history_tag:
         rc = handle_clear_history_request(&req.request_type.clear_history, resp);
+        break;
+    case zmk_battery_history_Request_request_peripheral_history_tag:
+        rc = handle_request_peripheral_history(&req.request_type.request_peripheral_history, resp);
         break;
     default:
         LOG_WRN("Unsupported battery history request type: %d", req.which_request_type);
@@ -151,3 +169,155 @@ static int handle_clear_history_request(const zmk_battery_history_ClearBatteryHi
     resp->response_type.clear_history = result;
     return 0;
 }
+
+/**
+ * Handle RequestPeripheralBatteryHistoryRequest.
+ * This triggers the battery history request behavior, which:
+ * - On central: sends local battery history as notifications
+ * - On all peripherals (via LOCALITY_GLOBAL): sends their battery history as notifications
+ * The actual data comes via notifications when each device responds.
+ */
+static int handle_request_peripheral_history(
+    const zmk_battery_history_RequestPeripheralBatteryHistoryRequest *req,
+    zmk_battery_history_Response *resp) {
+    LOG_INF("Received request for battery history (requested peripheral_id=%d)", req->peripheral_id);
+
+#if IS_ENABLED(CONFIG_ZMK_BATTERY_HISTORY_SPLIT)
+    // Invoke the battery history request behavior
+    // This behavior has LOCALITY_GLOBAL, so ZMK will automatically:
+    // 1. Execute it locally (central sends its battery history)
+    // 2. Invoke it on all connected peripherals (each sends their battery history)
+    struct zmk_behavior_binding binding = {
+        .behavior_dev = "bhr",
+        .param1 = 0,
+        .param2 = 0,
+    };
+    struct zmk_behavior_binding_event event = {
+        .position = 0,
+        .timestamp = k_uptime_get(),
+    };
+
+    int rc = zmk_behavior_invoke_binding(&binding, event, true);
+    if (rc < 0 && rc != ZMK_BEHAVIOR_OPAQUE) {
+        LOG_ERR("Failed to invoke battery history request behavior: %d", rc);
+    }
+#endif
+
+    // Return an empty success response to acknowledge the request
+    // The actual data will come via notifications
+    zmk_battery_history_GetBatteryHistoryResponse result =
+        zmk_battery_history_GetBatteryHistoryResponse_init_zero;
+    result.entries_count = 0;
+
+    resp->which_response_type = zmk_battery_history_Response_get_history_tag;
+    resp->response_type.get_history = result;
+    return 0;
+}
+
+// Buffer for notification payload
+static zmk_battery_history_Notification notification_buffer;
+
+/**
+ * Encoder function for notification payload
+ */
+static bool encode_notification_payload(pb_ostream_t *stream, const pb_field_t *field,
+                                        void *const *arg) {
+    const zmk_battery_history_Notification *notif = (const zmk_battery_history_Notification *)*arg;
+    if (!pb_encode_tag_for_field(stream, field)) {
+        return false;
+    }
+
+    size_t size;
+    if (!pb_get_encoded_size(&size, zmk_battery_history_Notification_fields, notif)) {
+        LOG_WRN("Failed to get encoded size for notification");
+        return false;
+    }
+
+    if (!pb_encode_varint(stream, size)) {
+        return false;
+    }
+
+    return pb_encode(stream, zmk_battery_history_Notification_fields, notif);
+}
+
+/**
+ * Get the subsystem index for this custom subsystem
+ */
+static int get_subsystem_index(void) {
+    size_t subsystem_count;
+    STRUCT_SECTION_COUNT(zmk_rpc_custom_subsystem, &subsystem_count);
+
+    for (size_t i = 0; i < subsystem_count; i++) {
+        struct zmk_rpc_custom_subsystem *custom_subsys;
+        STRUCT_SECTION_GET(zmk_rpc_custom_subsystem, i, &custom_subsys);
+        if (strcmp(custom_subsys->identifier, "zmk__battery_history") == 0) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * Send a battery history notification for a single entry
+ */
+int zmk_battery_history_send_notification(uint8_t source_id,
+                                          const struct zmk_battery_history_entry *entry,
+                                          uint8_t entry_index, uint8_t total_entries,
+                                          bool is_last) {
+    int subsystem_idx = get_subsystem_index();
+    if (subsystem_idx < 0) {
+        LOG_ERR("Failed to get subsystem index");
+        return -ENOENT;
+    }
+
+    notification_buffer = (zmk_battery_history_Notification)zmk_battery_history_Notification_init_zero;
+    notification_buffer.which_notification_type =
+        zmk_battery_history_Notification_battery_history_tag;
+    notification_buffer.notification_type.battery_history.source_id = source_id;
+    notification_buffer.notification_type.battery_history.entry.timestamp = entry->timestamp;
+    notification_buffer.notification_type.battery_history.entry.battery_level = entry->battery_level;
+    notification_buffer.notification_type.battery_history.entry_index = entry_index;
+    notification_buffer.notification_type.battery_history.total_entries = total_entries;
+    notification_buffer.notification_type.battery_history.is_last = is_last;
+
+    struct zmk_studio_custom_notification notif = {
+        .subsystem_index = (uint8_t)subsystem_idx,
+        .encode_payload = {
+            .funcs.encode = encode_notification_payload,
+            .arg = &notification_buffer,
+        },
+    };
+
+    LOG_DBG("Sending battery history notification: source=%d, idx=%d/%d, level=%d%%", source_id,
+            entry_index, total_entries, entry->battery_level);
+
+    return raise_zmk_studio_custom_notification(notif);
+}
+
+#if IS_ENABLED(CONFIG_ZMK_BATTERY_HISTORY_SPLIT)
+/**
+ * Listener for battery history entry events.
+ * When an entry event is raised (from local or remote), send RPC notification.
+ */
+static int battery_history_entry_listener(const zmk_event_t *eh) {
+    struct zmk_battery_history_entry_event *ev = as_zmk_battery_history_entry_event(eh);
+    if (!ev) {
+        return ZMK_EV_EVENT_BUBBLE;
+    }
+
+    LOG_DBG("Battery history entry event: source=%d, idx=%d/%d", ev->source, ev->entry_index,
+            ev->total_entries);
+
+    // Send RPC notification for this entry
+    int rc = zmk_battery_history_send_notification(ev->source, &ev->entry, ev->entry_index,
+                                                   ev->total_entries, ev->is_last);
+    if (rc < 0) {
+        LOG_ERR("Failed to send battery history notification: %d", rc);
+    }
+
+    return ZMK_EV_EVENT_HANDLED;
+}
+
+ZMK_LISTENER(battery_history_entry, battery_history_entry_listener);
+ZMK_SUBSCRIPTION(battery_history_entry, zmk_battery_history_entry_event);
+#endif // IS_ENABLED(CONFIG_ZMK_BATTERY_HISTORY_SPLIT)

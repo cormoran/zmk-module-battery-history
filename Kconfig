@@ -16,6 +16,13 @@ config ZMK_BATTERY_HISTORY_STUDIO_RPC
     help
       Enable custom RPC protocol to retrieve battery history via ZMK Studio.
 
+config ZMK_BATTERY_HISTORY_SPLIT
+    bool "Enable split keyboard support for battery history"
+    depends on ZMK_SPLIT
+    help
+      Enable support for retrieving battery history from split keyboard peripherals.
+      This requires a behavior to request battery history from peripherals.
+
 config ZMK_BATTERY_HISTORY_MAX_ENTRIES
     int "Maximum number of battery history entries to store"
     default 192
