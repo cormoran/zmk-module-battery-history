@@ -18,37 +18,27 @@
 #include <zmk/behavior.h>
 #include <zmk/battery_history/battery_history.h>
 
-#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-#include <zmk/split/central.h>
-#endif
-
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
                                      struct zmk_behavior_binding_event event) {
-    uint8_t peripheral_id = binding->param1;
-    LOG_INF("Battery history request behavior pressed, peripheral_id=%d", peripheral_id);
+    LOG_INF("Battery history request behavior pressed");
 
-#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-    // On central: send command to peripheral to trigger battery history send
-    // The behavior will be invoked on the peripheral with same params
-    int rc = zmk_split_central_invoke_behavior(peripheral_id, binding, event, true);
-    if (rc < 0) {
-        LOG_ERR("Failed to invoke behavior on peripheral %d: %d", peripheral_id, rc);
-        return rc;
-    }
-    LOG_DBG("Sent battery history request to peripheral %d", peripheral_id);
-#else
-    // On peripheral: trigger sending battery history entries
+    // This behavior is LOCALITY_GLOBAL, so ZMK automatically:
+    // - Invokes this on central (locally)
+    // - Invokes this on all peripherals via split transport
+    //
+    // On peripheral: trigger sending battery history entries as events.
+    // These events will be handled by the RPC handler's listener on central
+    // (when notifications are sent to the host).
     int rc = zmk_battery_history_trigger_send();
     if (rc < 0) {
         LOG_ERR("Failed to trigger battery history send: %d", rc);
         return rc;
     }
-    LOG_DBG("Triggered battery history send on peripheral");
-#endif
+    LOG_DBG("Triggered battery history send");
 
     return ZMK_BEHAVIOR_OPAQUE;
 }

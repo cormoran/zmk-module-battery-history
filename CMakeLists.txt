@@ -12,7 +12,6 @@ if(CONFIG_ZMK_BATTERY_HISTORY)
 
     if(CONFIG_ZMK_BATTERY_HISTORY_SPLIT)
         target_sources(app PRIVATE src/behaviors/behavior_battery_history_request.c)
-        target_sources(app PRIVATE src/battery_history/battery_history_split.c)
     endif()
 
     if(CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC)

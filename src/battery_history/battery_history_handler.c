@@ -20,6 +20,10 @@
 #include <zmk/battery_history/battery_history.h>
 #include <zmk/battery_history/events/battery_history_entry_event.h>
 
+#if IS_ENABLED(CONFIG_ZMK_BATTERY_HISTORY_SPLIT)
+#include <zmk/behavior.h>
+#endif
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -168,21 +172,39 @@ static int handle_clear_history_request(const zmk_battery_history_ClearBatteryHi
 
 /**
  * Handle RequestPeripheralBatteryHistoryRequest.
- * This triggers the behavior to request battery history from peripheral.
- * For now, this returns a simple acknowledgement. Actual data comes via notifications.
+ * This triggers the battery history request behavior, which:
+ * - On central: sends local battery history as notifications
+ * - On all peripherals (via LOCALITY_GLOBAL): sends their battery history as notifications
+ * The actual data comes via notifications when each device responds.
  */
 static int handle_request_peripheral_history(
     const zmk_battery_history_RequestPeripheralBatteryHistoryRequest *req,
     zmk_battery_history_Response *resp) {
-    LOG_INF("Received request for peripheral %d battery history", req->peripheral_id);
+    LOG_INF("Received request for battery history (requested peripheral_id=%d)", req->peripheral_id);
 
-#if IS_ENABLED(CONFIG_ZMK_BATTERY_HISTORY_SPLIT) && IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-    // TODO: Trigger behavior to request from peripheral
-    // For now, just acknowledge the request
-    // The actual data will come via notifications when peripheral responds
+#if IS_ENABLED(CONFIG_ZMK_BATTERY_HISTORY_SPLIT)
+    // Invoke the battery history request behavior
+    // This behavior has LOCALITY_GLOBAL, so ZMK will automatically:
+    // 1. Execute it locally (central sends its battery history)
+    // 2. Invoke it on all connected peripherals (each sends their battery history)
+    struct zmk_behavior_binding binding = {
+        .behavior_dev = "bhr",
+        .param1 = 0,
+        .param2 = 0,
+    };
+    struct zmk_behavior_binding_event event = {
+        .position = 0,
+        .timestamp = k_uptime_get(),
+    };
+
+    int rc = zmk_behavior_invoke_binding(&binding, event, true);
+    if (rc < 0 && rc != ZMK_BEHAVIOR_OPAQUE) {
+        LOG_ERR("Failed to invoke battery history request behavior: %d", rc);
+    }
 #endif
 
     // Return an empty success response to acknowledge the request
+    // The actual data will come via notifications
     zmk_battery_history_GetBatteryHistoryResponse result =
         zmk_battery_history_GetBatteryHistoryResponse_init_zero;
     result.entries_count = 0;

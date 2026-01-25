@@ -5,4 +5,4 @@ description: Battery History Request Behavior
 
 compatible: "zmk,behavior-battery-history-request"
 
-include: one_param.yaml
+include: zero_param.yaml
