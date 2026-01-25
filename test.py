@@ -38,35 +38,35 @@ class WestCommandsTests(unittest.TestCase):
         tests_build = self.BUILD_DIR / "tests"
         shutil.rmtree(tests_build, ignore_errors=True)
 
-        result = run_west(["zmk-test", "tests", '-m', '.' , '-v'])
+        result = run_west(["zmk-test", "tests", '-m', '.'])
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("PASS: battery-history", result.stdout)
+        self.assertIn("PASS: studio", result.stdout)
 
     def test_zmk_build(self):
         artifacts_and_expected_config: dict[str, list[str | NotFound]] = {
-            "battery_test_with_custom_rpc_support": [
+            "my_awesome_keyboard_with_custom_rpc_support": [
                 "CONFIG_MY_AWESOME_KEYBOARD_SPECIAL_FEATURE=y",
                 "CONFIG_ZMK_STUDIO=y",
-                "CONFIG_ZMK_BATTERY_HISTORY=y",
-                "CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC=y",
+                "CONFIG_ZMK_TEMPLATE_FEATURE=y",
+                "CONFIG_ZMK_TEMPLATE_FEATURE_STUDIO_RPC=y",
             ],
-            "battery_test_without_custom_rpc_support": [
+            "my_awesome_keyboard_without_custom_rpc_support": [
                 "CONFIG_MY_AWESOME_KEYBOARD_SPECIAL_FEATURE=y",
                 "# CONFIG_ZMK_STUDIO is not set",
-                "CONFIG_ZMK_BATTERY_HISTORY=y",
-                NotFound("CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC"),
+                "CONFIG_ZMK_TEMPLATE_FEATURE=y",
+                NotFound("CONFIG_ZMK_TEMPLATE_FEATURE_STUDIO_RPC"),
             ]
         }
 
         for artifact in artifacts_and_expected_config.keys():
             shutil.rmtree(self.BUILD_DIR / artifact, ignore_errors=True)
 
-        result = run_west(["zmk-build", "tests/zmk-config/config", "-m", "tests/zmk-config", ".", "-q", "-p", "always"])
+        result = run_west(["zmk-build", "tests/zmk-config/config", "-m", "tests/zmk-config", ".", "-q"])
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
         for artifact, entries in artifacts_and_expected_config.items():
             config_path = self.BUILD_DIR / artifact / "zephyr" / ".config"
-            self.assertTrue(config_path.exists(), f"{config_path} is missing")
+            self.assertTrue(config_path.exists(), f"{artifact} .config is missing")
             config_text = config_path.read_text()
             for entry in entries:
                 if isinstance(entry, NotFound):
