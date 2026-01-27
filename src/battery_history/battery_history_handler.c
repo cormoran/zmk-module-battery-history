@@ -68,7 +68,6 @@ static bool battery_history_rpc_handle_request(const zmk_custom_CallRequest *raw
         resp->response_type.error = err;
         return true;
     }
-
     int rc = 0;
     switch (req.which_request_type) {
     case zmk_battery_history_Request_get_history_tag:
@@ -100,7 +99,6 @@ static int handle_get_history_request(const zmk_battery_history_GetBatteryHistor
 
     zmk_battery_history_GetBatteryHistoryResponse result =
         zmk_battery_history_GetBatteryHistoryResponse_init_zero;
-
     // Get source count
     int source_count = zmk_battery_history_get_source_count();
 
@@ -146,6 +144,7 @@ static int handle_get_history_request(const zmk_battery_history_GetBatteryHistor
 
         result.sources_count++;
     }
+    return -1;
 
     // Include metadata if requested
     if (req->include_metadata) {

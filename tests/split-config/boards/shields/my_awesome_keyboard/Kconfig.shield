@@ -1,0 +1,4 @@
+config SHIELD_MY_AWESOME_KEYBOARD_LEFT
+    def_bool $(shields_list_contains,my_awesome_keyboard_left)
+config SHIELD_MY_AWESOME_KEYBOARD_RIGHT
+    def_bool $(shields_list_contains,my_awesome_keyboard_right)

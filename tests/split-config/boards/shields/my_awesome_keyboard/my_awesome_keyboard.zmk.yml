@@ -1,0 +1,8 @@
+file_format: "1"
+id: my_awesome_keyboard_split
+name: My Awesome Keyboard
+type: shield
+requires: [seeed_xiao]
+siblings:
+  - my_awesome_keyboard_left
+  - my_awesome_keyboard_right

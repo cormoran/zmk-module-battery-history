@@ -77,5 +77,38 @@ class WestCommandsTests(unittest.TestCase):
                         self.fail(f"{entry} not found in {config_path} for {artifact}")
             self.assertTrue((config_path.parent / "zmk.uf2").exists(), f"{artifact} zmk.uf2 is missing in {config_path.parent}")
 
+    def test_zmk_build_split(self):
+        artifacts_and_expected_config: dict[str, list[str | NotFound]] = {
+            "battery_test_right_central": [
+                "CONFIG_ZMK_STUDIO=y",
+                "CONFIG_ZMK_BATTERY_HISTORY=y",
+                "CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC=y",
+            ],
+            "battery_test_left_peripheral": [
+                "# CONFIG_ZMK_STUDIO is not set",
+                "CONFIG_ZMK_BATTERY_HISTORY=y",
+                NotFound("CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC"),
+            ]
+        }
+
+        for artifact in artifacts_and_expected_config.keys():
+            shutil.rmtree(self.BUILD_DIR / artifact, ignore_errors=True)
+
+        result = run_west(["zmk-build", "tests/split-config/config", "-m", "tests/split-config", ".", "-q", "-p", "always"])
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+        for artifact, entries in artifacts_and_expected_config.items():
+            config_path = self.BUILD_DIR / artifact / "zephyr" / ".config"
+            self.assertTrue(config_path.exists(), f"{config_path} is missing")
+            config_text = config_path.read_text()
+            for entry in entries:
+                if isinstance(entry, NotFound):
+                    if entry.text in config_text:
+                        self.fail(f"{entry.text} found in {config_path} for {artifact}, but it should not be present")
+                else:
+                    if entry not in config_text:
+                        self.fail(f"{entry} not found in {config_path} for {artifact}")
+            self.assertTrue((config_path.parent / "zmk.uf2").exists(), f"{artifact} zmk.uf2 is missing in {config_path.parent}")
+
 if __name__ == "__main__":
     unittest.main()
