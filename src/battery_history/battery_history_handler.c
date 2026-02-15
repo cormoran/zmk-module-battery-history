@@ -108,23 +108,10 @@ static int handle_get_history_request(const zmk_battery_history_GetBatteryHistor
                                       zmk_battery_history_Response *resp) {
     LOG_INF("Received request for battery history from all devices");
 
-    // Invoke the battery history request behavior
-    // This behavior has LOCALITY_GLOBAL, so ZMK will automatically:
-    // 1. Execute it locally (central sends its battery history)
-    // 2. Invoke it on all connected peripherals (each sends their battery history)
-    struct zmk_behavior_binding binding = {
-        .behavior_dev = "bhr",
-        .param1 = 0,
-        .param2 = 0,
-    };
-    struct zmk_behavior_binding_event event = {
-        .position = 0,
-        .timestamp = k_uptime_get(),
-    };
-
-    int rc = zmk_behavior_invoke_binding(&binding, event, true);
-    if (rc < 0 && rc != ZMK_BEHAVIOR_OPAQUE) {
-        LOG_ERR("Failed to invoke battery history request behavior: %d", rc);
+    int rc = raise_zmk_battery_history_request_event((struct zmk_battery_history_request_event){
+        .type = ZMK_BATTERY_HISTORY_REQUEST_EVENT_TYPE_REQUEST_ENTRIES});
+    if (rc < 0) {
+        return rc;
     }
 
     // Return an empty success response to acknowledge the request
@@ -147,10 +134,11 @@ static int handle_clear_history_request(const zmk_battery_history_ClearBatteryHi
     zmk_battery_history_ClearBatteryHistoryResponse result =
         zmk_battery_history_ClearBatteryHistoryResponse_init_zero;
 
-    int cleared = zmk_battery_history_clear();
-    result.entries_cleared = (uint32_t)cleared;
-
-    LOG_INF("Cleared %d battery history entries", cleared);
+    int rc = raise_zmk_battery_history_request_event((struct zmk_battery_history_request_event){
+        .type = ZMK_BATTERY_HISTORY_REQUEST_EVENT_TYPE_CLEAR_HISTORY});
+    if (rc < 0) {
+        return rc;
+    }
 
     resp->which_response_type = zmk_battery_history_Response_clear_history_tag;
     resp->response_type.clear_history = result;
@@ -259,7 +247,7 @@ static int battery_history_entry_listener(const zmk_event_t *eh) {
         LOG_ERR("Failed to send battery history notification: %d", rc);
     }
 
-    return ZMK_EV_EVENT_HANDLED;
+    return ZMK_EV_EVENT_BUBBLE;
 }
 
 ZMK_LISTENER(battery_history_entry, battery_history_entry_listener);
