@@ -488,6 +488,8 @@ int zmk_battery_history_save(void) { return save_history(); }
 
 ZMK_EVENT_IMPL(zmk_battery_history_entry_event);
 
+ZMK_EVENT_IMPL(zmk_battery_history_request_event);
+
 // Work item for sending battery history entries
 struct battery_history_send_work_data {
     struct k_work_delayable work;
@@ -576,4 +578,36 @@ SYS_INIT(battery_history_send_work_init, APPLICATION, CONFIG_APPLICATION_INIT_PR
 
 ZMK_RELAY_EVENT_HANDLE(zmk_battery_history_entry_event, bh, source);
 ZMK_RELAY_EVENT_PERIPHERAL_TO_CENTRAL(zmk_battery_history_entry_event, bh, source);
-#endif
+
+ZMK_RELAY_EVENT_HANDLE(zmk_battery_history_request_event, bhr, );
+ZMK_RELAY_EVENT_CENTRAL_TO_PERIPHERAL(zmk_battery_history_request_event, bhr, );
+
+static int battery_history_request_event_listener(const zmk_event_t *eh) {
+    struct zmk_battery_history_request_event *ev = as_zmk_battery_history_request_event(eh);
+    if (!ev) {
+        return ZMK_EV_EVENT_BUBBLE;
+    }
+
+    LOG_DBG("Battery history request event: type=%d", ev->type);
+
+    if (ev->type == ZMK_BATTERY_HISTORY_REQUEST_EVENT_TYPE_REQUEST_ENTRIES) {
+        // Trigger sending battery history entries to central
+        int rc = zmk_battery_history_trigger_send();
+        if (rc < 0) {
+            LOG_ERR("Failed to trigger battery history send: %d", rc);
+        }
+    } else if (ev->type == ZMK_BATTERY_HISTORY_REQUEST_EVENT_TYPE_CLEAR_HISTORY) {
+        // Clear battery history
+        int cleared = zmk_battery_history_clear();
+        LOG_INF("Cleared battery history on request: %d entries removed", cleared);
+    } else {
+        LOG_WRN("Unknown battery history request event type: %d", ev->type);
+    }
+
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+ZMK_LISTENER(battery_history_request, battery_history_request_event_listener);
+ZMK_SUBSCRIPTION(battery_history_request, zmk_battery_history_request_event);
+
+#endif // IS_ENABLED(CONFIG_ZMK_SPLIT)
