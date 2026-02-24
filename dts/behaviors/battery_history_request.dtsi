@@ -9,6 +9,7 @@
 		bhr: bhr {
 			compatible = "zmk,behavior-battery-history-request";
 			#binding-cells = <0>;
+			display-name = "Battery History Request";
 		};
 	};
 };
