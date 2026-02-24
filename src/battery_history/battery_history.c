@@ -387,20 +387,6 @@ static int battery_history_settings_commit(void) {
 }
 
 /**
- * Handle battery state change events
- */
-static int battery_history_event_listener(const zmk_event_t *eh) {
-    const struct zmk_battery_state_changed *bev = as_zmk_battery_state_changed(eh);
-    if (bev) {
-        k_work_reschedule(&battery_history_work, K_NO_WAIT);
-    }
-    return ZMK_EV_EVENT_BUBBLE;
-}
-
-ZMK_LISTENER(battery_history, battery_history_event_listener);
-ZMK_SUBSCRIPTION(battery_history, zmk_battery_state_changed);
-
-/**
  * Handle activity state changes - save before sleep
  */
 static int battery_history_activity_listener(const zmk_event_t *eh) {
