@@ -36,7 +36,7 @@ config ZMK_BATTERY_HISTORY_INTERVAL_MINUTES
 
 config ZMK_BATTERY_HISTORY_LEVEL_THRESHOLD
     int "Battery level change threshold for recording (percentage)"
-    default 1
+    default 5
     range 1 100
     help
       Even if ZMK_BATTERY_HISTORY_INTERVAL_MINUTES has not elapsed, record a new
@@ -62,12 +62,12 @@ config ZMK_BATTERY_HISTORY_SAVE_INTERVAL_MINUTES
 
 config ZMK_BATTERY_HISTORY_SAVE_LEVEL_THRESHOLD
     int "Battery level change threshold for saving (percentage)"
-    default 2
-    range 1 10
+    default 5
+    range 1 50
     help
       Save to persistent storage when battery level has dropped by this percentage
-      since the last save. Default is 2%, meaning save triggers when battery
-      drops 2% from the last saved level. This balances data freshness with
+      since the last save. Default is 5%, meaning save triggers when battery
+      drops 5% from the last saved level. This balances data freshness with
       flash wear reduction.
 
 config ZMK_BATTERY_HISTORY_FORCE_SAVE_ON_SLEEP
