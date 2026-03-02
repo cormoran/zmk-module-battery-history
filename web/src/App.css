@@ -4,7 +4,12 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
     sans-serif;
   min-height: 100vh;
 }
@@ -107,8 +112,13 @@
 }
 
 @keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.5); }
-  50% { box-shadow: 0 0 16px rgba(34, 197, 94, 0.8); }
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.8);
+  }
 }
 
 .device-name {
@@ -136,7 +146,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .btn {
@@ -433,4 +445,3 @@
     color: #64748b;
   }
 }
-

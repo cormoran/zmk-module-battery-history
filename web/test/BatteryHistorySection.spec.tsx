@@ -1,6 +1,6 @@
 /**
  * Tests for BatteryHistorySection component
- * 
+ *
  * Tests the battery history display and interaction functionality.
  */
 
@@ -9,7 +9,10 @@ import {
   createConnectedMockZMKApp,
   ZMKAppProvider,
 } from "@cormoran/zmk-studio-react-hook/testing";
-import { BatteryHistorySection, BATTERY_HISTORY_SUBSYSTEM } from "../src/components/BatteryHistorySection";
+import {
+  BatteryHistorySection,
+  BATTERY_HISTORY_SUBSYSTEM,
+} from "../src/components/BatteryHistorySection";
 
 describe("BatteryHistorySection Component", () => {
   describe("With Subsystem", () => {
@@ -63,7 +66,9 @@ describe("BatteryHistorySection Component", () => {
       );
 
       // Check for warning message - use getAllByText since CONFIG appears in multiple places
-      expect(screen.getByText(/Battery History module not found/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Battery History module not found/i)
+      ).toBeInTheDocument();
       const configElements = screen.getAllByText(/CONFIG_ZMK_BATTERY_HISTORY/i);
       expect(configElements.length).toBeGreaterThan(0);
     });

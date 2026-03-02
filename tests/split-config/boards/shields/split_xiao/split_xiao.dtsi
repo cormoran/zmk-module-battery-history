@@ -8,7 +8,7 @@
 	chosen {
 		zmk,physical-layout = &physical_layout0;
 	};
-	
+
 	kscan0: kscan0 {
 		compatible = "zmk,kscan-gpio-direct";
 		input-gpios
@@ -25,7 +25,7 @@
 		, <&xiao_d 10 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>
 		;
 	};
-	
+
 	default_transform: keymap_transform_0 {
 		compatible = "zmk,matrix-transform";
 		columns = <11>;

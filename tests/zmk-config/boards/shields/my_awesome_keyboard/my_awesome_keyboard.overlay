@@ -15,7 +15,7 @@
 		zmk,kscan = &kscan0;
 		zmk,physical-layout = &physical_layout0;
 	};
-	
+
 	kscan0: kscan {
 		compatible = "zmk,kscan-gpio-direct";
 		input-gpios
@@ -32,7 +32,7 @@
 		, <&xiao_d 10 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>
 		;
 	};
-	
+
 	transform0: keymap_transform {
 		compatible = "zmk,matrix-transform";
 		columns = <11>;

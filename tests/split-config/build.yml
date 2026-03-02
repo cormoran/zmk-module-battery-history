@@ -7,4 +7,3 @@ include:
   - artifact: left
     board: seeeduino_xiao_ble
     shield: split_xiao_left
----

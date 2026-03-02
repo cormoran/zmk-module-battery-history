@@ -88,6 +88,5 @@ int zmk_battery_history_trigger_send(void);
  */
 int zmk_battery_history_send_notification(uint8_t source_id,
                                           const struct zmk_battery_history_entry *entry,
-                                          uint8_t entry_index, uint8_t total_entries,
-                                          bool is_last);
+                                          uint8_t entry_index, uint8_t total_entries, bool is_last);
 #endif

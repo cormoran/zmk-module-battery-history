@@ -91,7 +91,7 @@ export function BatteryHistorySection() {
             const sourceId = entry.sourceId;
 
             console.log(
-              `Received battery history notification: source=${sourceId}, idx=${entry.entryIndex}/${entry.totalEntries}, last=${entry.isLast}`,
+              `Received battery history notification: source=${sourceId}, idx=${entry.entryIndex}/${entry.totalEntries}, last=${entry.isLast}`
             );
 
             // On first entry for this source, set up streaming state
@@ -183,7 +183,7 @@ export function BatteryHistorySection() {
     try {
       const service = new ZMKCustomSubsystem(
         zmkApp.state.connection,
-        subsystem.index,
+        subsystem.index
       );
 
       const request = Request.create({
@@ -231,7 +231,7 @@ export function BatteryHistorySection() {
     if (!zmkApp?.state.connection || !subsystem) return;
 
     const confirmed = window.confirm(
-      "Are you sure you want to clear all battery history data from the device?",
+      "Are you sure you want to clear all battery history data from the device?"
     );
     if (!confirmed) return;
 
@@ -240,7 +240,7 @@ export function BatteryHistorySection() {
     try {
       const service = new ZMKCustomSubsystem(
         zmkApp.state.connection,
-        subsystem.index,
+        subsystem.index
       );
 
       const request = Request.create({
@@ -469,7 +469,7 @@ function BatteryStats({ entries }: { entries: BatteryHistoryEntry[] }) {
   const minLevel = Math.min(...levels);
   const maxLevel = Math.max(...levels);
   const avgLevel = Math.round(
-    levels.reduce((a, b) => a + b, 0) / levels.length,
+    levels.reduce((a, b) => a + b, 0) / levels.length
   );
 
   // Estimate drain rate (percentage per hour)
