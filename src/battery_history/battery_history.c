@@ -59,6 +59,9 @@ static bool first_record_after_boot = true;
 // Track if head has changed since last save (requires full save)
 static bool head_changed_since_save = false;
 
+// Recording enabled setting (persisted to storage)
+static bool recording_enabled = true;
+
 // Settings handling
 static int battery_history_settings_set(const char *name, size_t len, settings_read_cb read_cb,
                                         void *cb_arg);
@@ -287,6 +290,10 @@ static void record_battery_level() {
         LOG_WRN("Settings not loaded yet, skipping battery record");
         return;
     }
+    if (!recording_enabled) {
+        LOG_DBG("Recording is disabled, skipping battery record");
+        return;
+    }
     // Get current timestamp (seconds since boot)
     uint16_t timestamp = (uint16_t)(k_uptime_get() / 1000 - timestamp_offset);
 
@@ -351,6 +358,15 @@ static int battery_history_settings_set(const char *name, size_t len, settings_r
         history_head = state.head;
         history_count = state.count;
         return 0;
+    }
+
+    // recording enabled setting (relative path within "bh" namespace)
+    if (!strcmp(name, "enabled")) {
+        if (len != sizeof(bool)) {
+            return -EINVAL;
+        }
+        int res = read_cb(cb_arg, &recording_enabled, sizeof(recording_enabled));
+        return MIN(res, 0);
     }
 
     // individual entries with "eN" keys
@@ -471,6 +487,26 @@ int zmk_battery_history_get_interval(void) { return CONFIG_ZMK_BATTERY_HISTORY_I
 int zmk_battery_history_get_max_entries(void) { return MAX_ENTRIES; }
 
 int zmk_battery_history_save(void) { return save_history(); }
+
+bool zmk_battery_history_get_recording_enabled(void) { return recording_enabled; }
+
+int zmk_battery_history_set_recording_enabled(bool enabled) {
+    if (recording_enabled == enabled) {
+        return 0; // No change needed
+    }
+
+    recording_enabled = enabled;
+    LOG_INF("Battery history recording %s", enabled ? "enabled" : "disabled");
+
+    // Save the setting to persistent storage
+    int rc = settings_save_one("bh/enabled", &recording_enabled, sizeof(recording_enabled));
+    if (rc < 0) {
+        LOG_ERR("Failed to save recording enabled setting: %d", rc);
+        return rc;
+    }
+
+    return 0;
+}
 
 ZMK_EVENT_IMPL(zmk_battery_history_entry_event);
 

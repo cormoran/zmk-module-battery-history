@@ -37,11 +37,34 @@ message ClearBatteryHistoryResponse {
     uint32 entries_cleared = 1;
 }
 
+// Request to get the recording enabled setting
+message GetRecordingEnabledRequest {}
+
+// Response containing the recording enabled setting
+message GetRecordingEnabledResponse {
+    // Whether battery history recording is enabled
+    bool recording_enabled = 1;
+}
+
+// Request to set the recording enabled setting
+message SetRecordingEnabledRequest {
+    // Whether to enable battery history recording
+    bool recording_enabled = 1;
+}
+
+// Response for set recording enabled operation
+message SetRecordingEnabledResponse {
+    // The new recording enabled state
+    bool recording_enabled = 1;
+}
+
 // Main request message
 message Request {
     oneof request_type {
         GetBatteryHistoryRequest get_history = 1;
         ClearBatteryHistoryRequest clear_history = 2;
+        GetRecordingEnabledRequest get_recording_enabled = 3;
+        SetRecordingEnabledRequest set_recording_enabled = 4;
     }
 }
 
@@ -54,6 +77,8 @@ message Response {
         ErrorResponse error = 1;
         GetBatteryHistoryResponse get_history = 2;
         ClearBatteryHistoryResponse clear_history = 3;
+        GetRecordingEnabledResponse get_recording_enabled = 4;
+        SetRecordingEnabledResponse set_recording_enabled = 5;
     }
 }
 

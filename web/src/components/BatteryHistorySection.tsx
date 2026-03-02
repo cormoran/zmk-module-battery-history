@@ -53,6 +53,8 @@ interface BatteryHistoryState {
   lastFetched: Date | null;
   // Streaming progress per source for parallel notifications
   streamingProgressBySource: Record<number, StreamingProgress>;
+  // Recording enabled state
+  recordingEnabled: boolean | null;
 }
 
 export function BatteryHistorySection() {
@@ -64,6 +66,7 @@ export function BatteryHistorySection() {
     error: null,
     lastFetched: null,
     streamingProgressBySource: {},
+    recordingEnabled: null,
   });
 
   // Buffer for accumulating streaming entries per source
@@ -279,6 +282,98 @@ export function BatteryHistorySection() {
     }
   }, [zmkApp, subsystem, fetchBatteryHistory]);
 
+  /**
+   * Fetch the recording enabled state from the device
+   */
+  const fetchRecordingEnabled = useCallback(async () => {
+    if (!zmkApp?.state.connection || !subsystem) return;
+
+    try {
+      const service = new ZMKCustomSubsystem(
+        zmkApp.state.connection,
+        subsystem.index,
+      );
+
+      const request = Request.create({
+        getRecordingEnabled: {},
+      });
+
+      const payload = Request.encode(request).finish();
+      const responsePayload = await service.callRPC(payload);
+
+      if (responsePayload) {
+        const resp = Response.decode(responsePayload);
+
+        if (resp.error) {
+          console.error("Failed to get recording enabled:", resp.error.message);
+        } else if (resp.getRecordingEnabled) {
+          setState((prev) => ({
+            ...prev,
+            recordingEnabled: resp.getRecordingEnabled!.recordingEnabled,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch recording enabled:", error);
+    }
+  }, [zmkApp, subsystem]);
+
+  /**
+   * Set the recording enabled state on the device
+   */
+  const setRecordingEnabled = useCallback(
+    async (enabled: boolean) => {
+      if (!zmkApp?.state.connection || !subsystem) return;
+
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
+      try {
+        const service = new ZMKCustomSubsystem(
+          zmkApp.state.connection,
+          subsystem.index,
+        );
+
+        const request = Request.create({
+          setRecordingEnabled: {
+            recordingEnabled: enabled,
+          },
+        });
+
+        const payload = Request.encode(request).finish();
+        const responsePayload = await service.callRPC(payload);
+
+        if (responsePayload) {
+          const resp = Response.decode(responsePayload);
+
+          if (resp.error) {
+            setState((prev) => ({
+              ...prev,
+              isLoading: false,
+              error: resp.error?.message || "Unknown error",
+            }));
+          } else if (resp.setRecordingEnabled) {
+            setState((prev) => ({
+              ...prev,
+              recordingEnabled: resp.setRecordingEnabled!.recordingEnabled,
+              isLoading: false,
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to set recording enabled:", error);
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to update recording setting",
+        }));
+      }
+    },
+    [zmkApp, subsystem],
+  );
+
   // Auto-fetch on mount when subsystem is available
   useEffect(() => {
     if (
@@ -287,8 +382,15 @@ export function BatteryHistorySection() {
       !state.isLoading
     ) {
       fetchBatteryHistory();
+      fetchRecordingEnabled();
     }
-  }, [subsystem, state.dataBySource, state.isLoading, fetchBatteryHistory]);
+  }, [
+    subsystem,
+    state.dataBySource,
+    state.isLoading,
+    fetchBatteryHistory,
+    fetchRecordingEnabled,
+  ]);
 
   if (!zmkApp) return null;
 
@@ -314,6 +416,7 @@ export function BatteryHistorySection() {
     error,
     lastFetched,
     streamingProgressBySource,
+    recordingEnabled,
   } = state;
   const data = dataBySource[selectedSource];
   const availableSources = Object.keys(dataBySource).map(Number);
@@ -343,6 +446,32 @@ export function BatteryHistorySection() {
           </button>
         </div>
       </div>
+
+      {/* Recording enabled toggle */}
+      {recordingEnabled !== null && (
+        <div className="recording-toggle">
+          <label className="toggle-label">
+            <span>Recording {recordingEnabled ? "Enabled" : "Disabled"}</span>
+            <button
+              className={`toggle-switch ${recordingEnabled ? "active" : ""}`}
+              onClick={() => setRecordingEnabled(!recordingEnabled)}
+              disabled={isLoading}
+              title={
+                recordingEnabled
+                  ? "Click to disable battery history recording"
+                  : "Click to enable battery history recording"
+              }
+            >
+              <span className="toggle-slider"></span>
+            </button>
+          </label>
+          <p className="toggle-hint">
+            {recordingEnabled
+              ? "Battery levels are being recorded automatically"
+              : "Recording is paused - no new battery data will be saved"}
+          </p>
+        </div>
+      )}
 
       {/* Source selector */}
       {availableSources.length > 1 && (

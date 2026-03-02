@@ -52,6 +52,12 @@ static int handle_get_history_request(const zmk_battery_history_GetBatteryHistor
                                       zmk_battery_history_Response *resp);
 static int handle_clear_history_request(const zmk_battery_history_ClearBatteryHistoryRequest *req,
                                         zmk_battery_history_Response *resp);
+static int handle_get_recording_enabled_request(
+    const zmk_battery_history_GetRecordingEnabledRequest *req,
+    zmk_battery_history_Response *resp);
+static int handle_set_recording_enabled_request(
+    const zmk_battery_history_SetRecordingEnabledRequest *req,
+    zmk_battery_history_Response *resp);
 
 /**
  * Main request handler for the battery history RPC subsystem.
@@ -82,6 +88,12 @@ static bool battery_history_rpc_handle_request(const zmk_custom_CallRequest *raw
         break;
     case zmk_battery_history_Request_clear_history_tag:
         rc = handle_clear_history_request(&req.request_type.clear_history, resp);
+        break;
+    case zmk_battery_history_Request_get_recording_enabled_tag:
+        rc = handle_get_recording_enabled_request(&req.request_type.get_recording_enabled, resp);
+        break;
+    case zmk_battery_history_Request_set_recording_enabled_tag:
+        rc = handle_set_recording_enabled_request(&req.request_type.set_recording_enabled, resp);
         break;
     default:
         LOG_WRN("Unsupported battery history request type: %d", req.which_request_type);
@@ -142,6 +154,52 @@ static int handle_clear_history_request(const zmk_battery_history_ClearBatteryHi
 
     resp->which_response_type = zmk_battery_history_Response_clear_history_tag;
     resp->response_type.clear_history = result;
+    return 0;
+}
+
+/**
+ * Handle GetRecordingEnabledRequest and populate the response.
+ */
+static int handle_get_recording_enabled_request(
+    const zmk_battery_history_GetRecordingEnabledRequest *req,
+    zmk_battery_history_Response *resp) {
+    LOG_DBG("Received get recording enabled request");
+
+    zmk_battery_history_GetRecordingEnabledResponse result =
+        zmk_battery_history_GetRecordingEnabledResponse_init_zero;
+
+    result.recording_enabled = zmk_battery_history_get_recording_enabled();
+
+    LOG_DBG("Recording enabled: %d", result.recording_enabled);
+
+    resp->which_response_type = zmk_battery_history_Response_get_recording_enabled_tag;
+    resp->response_type.get_recording_enabled = result;
+    return 0;
+}
+
+/**
+ * Handle SetRecordingEnabledRequest and populate the response.
+ */
+static int handle_set_recording_enabled_request(
+    const zmk_battery_history_SetRecordingEnabledRequest *req,
+    zmk_battery_history_Response *resp) {
+    LOG_DBG("Received set recording enabled request: %d", req->recording_enabled);
+
+    zmk_battery_history_SetRecordingEnabledResponse result =
+        zmk_battery_history_SetRecordingEnabledResponse_init_zero;
+
+    int rc = zmk_battery_history_set_recording_enabled(req->recording_enabled);
+    if (rc < 0) {
+        LOG_ERR("Failed to set recording enabled: %d", rc);
+        return rc;
+    }
+
+    result.recording_enabled = zmk_battery_history_get_recording_enabled();
+
+    LOG_INF("Recording enabled set to: %d", result.recording_enabled);
+
+    resp->which_response_type = zmk_battery_history_Response_set_recording_enabled_tag;
+    resp->response_type.set_recording_enabled = result;
     return 0;
 }
 

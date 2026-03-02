@@ -72,6 +72,19 @@ int zmk_battery_history_save(void);
  */
 int zmk_battery_history_trigger_send(void);
 
+/**
+ * @brief Get whether battery history recording is enabled
+ * @return true if recording is enabled, false otherwise
+ */
+bool zmk_battery_history_get_recording_enabled(void);
+
+/**
+ * @brief Set whether battery history recording is enabled
+ * @param enabled true to enable recording, false to disable
+ * @return 0 on success, negative error code on failure
+ */
+int zmk_battery_history_set_recording_enabled(bool enabled);
+
 #if IS_ENABLED(CONFIG_ZMK_BATTERY_HISTORY_STUDIO_RPC)
 /**
  * @brief Send a battery history notification for a single entry
